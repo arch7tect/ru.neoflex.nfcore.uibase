@@ -99,8 +99,8 @@ export class EcoreApp extends React.Component<Props, State> {
             }
             this.setState({loaded: true})
         })
-        let id: string = '80e3cf351c5fc42ca3db8be9390520d5';
-        this.fetchEObject(id).then(eObject=>{
+        let id: string = '59bb208006149f50bb32f76f4901029b';
+        this.fetchEObject(id, 999).then(eObject=>{
             console.log(eObject);
         })
     }
@@ -144,6 +144,34 @@ export class EcoreApp extends React.Component<Props, State> {
                     prefix = prefix + ' ';
                 }
             }
+            if (eObject.isKindOf('EClass')) {
+                if (eObject.get('abstract')) {
+                    prefix = prefix + 'abstract ';
+                }
+                if (eObject.get('interface')) {
+                    prefix = prefix + 'interface ';
+                }
+                else {
+                    prefix = prefix + 'class ';
+                }
+                let eAllSuperTypes = eObject.get('eAllSuperTypes') as any[]
+                if (eAllSuperTypes.length > 0) {
+                    postfix = " extends " + eAllSuperTypes.map(e=>e.get('name')).filter(e => e !== 'EObject').join(", ")
+                }
+            }
+            if (eObject.isKindOf('EOperation')) {
+                let eType = eObject.get('eType');
+                if (eType) {
+                    prefix = eType.get('name') + ' ';
+                }
+                else {
+                    console.log(eObject);
+                }
+                let eParameters = eObject.get('eParameters') as any[]
+                postfix = '(' + eParameters.map(p=>{
+                    return p.get('eType').get('name') + ' ' + p.get('name')
+                }).join(', ') + ')';
+            }
             return prefix + name + postfix;
         }
         let data: any[] = []
@@ -152,7 +180,7 @@ export class EcoreApp extends React.Component<Props, State> {
             data.push({key: getId(ePackage), name: ePackage.get('nsURI'), type: ePackage.eClass.get('name'), children})
             for (let eClassifier of ePackage.get('eClassifiers').array()) {
                 let children2: any[] = []
-                children.push({key: getId(eClassifier), name: eClassifier.get('name'), type: eClassifier.eClass.get('name'), children: children2});
+                children.push({key: getId(eClassifier), name: getName(eClassifier), type: eClassifier.eClass.get('name'), children: children2});
                 let eStructuralFeatures = eClassifier.get('eStructuralFeatures');
                 if (eStructuralFeatures) {
                     for (let eStructuralFeature of eStructuralFeatures.array()) {
@@ -168,7 +196,7 @@ export class EcoreApp extends React.Component<Props, State> {
                 let eOperations = eClassifier.get('eOperations');
                 if (eOperations) {
                     for (let eOperation of eOperations.array()) {
-                        children2.push({key: getId(eOperation), name: eOperation.get('name'), type: eOperation.eClass.get('name')})
+                        children2.push({key: getId(eOperation), name: getName(eOperation), type: eOperation.eClass.get('name')})
                     }
                 }
             }
