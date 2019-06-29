@@ -1,7 +1,9 @@
 import * as React from "react";
 import { Table } from 'antd';
 import 'antd/dist/antd.css';
-const Ecore =  require('ecore');
+import {Ecore} from "ecore";
+
+//const Ecore =  require('ecore');
 
 export interface Props {
     name: string;
@@ -35,20 +37,15 @@ export class EcoreApp extends React.Component<Props, State> {
         }).then(response => response.json());
     }
 
-    fetchEObject(ref: string, level: number = 1, resourceSet?: any, loading?: any): Promise<any> {
+    fetchEObject(ref: string, level: number = 1, resourceSet?: Ecore.ResourceSet, loading?: any): Promise<any> {
+        loading = loading || {}
+        let rs = resourceSet || Ecore.ResourceSet.create();
+
         let resid = ref.split('#')[0];
         let refid = resid.split('?')[0];
 
-        if (!loading) {
-            loading = {};
-        }
-
         if (loading.hasOwnProperty(refid)) {
             return loading[refid];
-        }
-
-        if (!resourceSet ) {
-            resourceSet = Ecore.ResourceSet.create();
         }
 
         function collectReferences(object: any, found: string[]): string[] {
@@ -72,11 +69,11 @@ export class EcoreApp extends React.Component<Props, State> {
             if (level > 0) {
                 let refs = collectReferences(json, []);
                 refEObjects = refs.map(ref=>{
-                    return this.fetchEObject(ref, level - 1, resourceSet);
+                    return this.fetchEObject(ref, level - 1, rs);
                 })
             }
             return Promise.all(refEObjects).then(resources=>{
-                let resource = resourceSet.create({ uri: resid });
+                let resource = rs.create({ uri: resid });
                 resource.load(json);
                 let eObject = resource.get('contents').first();
                 return eObject;
@@ -93,7 +90,7 @@ export class EcoreApp extends React.Component<Props, State> {
                 let uri = aPackage['nsURI'];
                 let resource = resourceSet.create({ uri });
                 resource.load(aPackage);
-                resource.get('contents').each((ePackage: any) => {
+                resource.get('contents').each((ePackage: Ecore.EPackage) => {
                     Ecore.EPackage.Registry.register(ePackage);
                 })
             }
@@ -110,7 +107,7 @@ export class EcoreApp extends React.Component<Props, State> {
             //if (eObject._id) return eObject._id;
             return eObject.eURI();
         }
-        let getName = (eObject: any): string => {
+        let getName = (eObject: any): JSX.Element => {
             let prefix: string = '';
             let name: string = eObject.get('name');
             let postfix: string = '';
@@ -144,6 +141,12 @@ export class EcoreApp extends React.Component<Props, State> {
                     prefix = prefix + ' ';
                 }
             }
+            if (eObject.isKindOf('EEnum')) {
+                prefix = 'enum ';
+            }
+            if (eObject.isTypeOf('EDataType')) {
+                prefix = 'type ';
+            }
             if (eObject.isKindOf('EClass')) {
                 if (eObject.get('abstract')) {
                     prefix = prefix + 'abstract ';
@@ -154,9 +157,9 @@ export class EcoreApp extends React.Component<Props, State> {
                 else {
                     prefix = prefix + 'class ';
                 }
-                let eAllSuperTypes = eObject.get('eAllSuperTypes') as any[]
-                if (eAllSuperTypes.length > 0) {
-                    postfix = " extends " + eAllSuperTypes.map(e=>e.get('name')).filter(e => e !== 'EObject').join(", ")
+                let eSuperTypes = (eObject.get('eSuperTypes') as any[]).filter(e => e.get('name') !== 'EObject')
+                if (eSuperTypes.length > 0) {
+                    postfix = " extends " + eSuperTypes.map(e=>e.get('name')).join(", ")
                 }
             }
             if (eObject.isKindOf('EOperation')) {
@@ -172,12 +175,12 @@ export class EcoreApp extends React.Component<Props, State> {
                     return p.get('eType').get('name') + ' ' + p.get('name')
                 }).join(', ') + ')';
             }
-            return prefix + name + postfix;
+            return <span>{prefix}<b>{name}</b>{postfix}</span>;
         }
         let data: any[] = []
         for (let ePackage of Ecore.EPackage.Registry.ePackages()) {
             let children: any[] = []
-            data.push({key: getId(ePackage), name: ePackage.get('nsURI'), type: ePackage.eClass.get('name'), children})
+            data.push({key: getId(ePackage), name: getName(ePackage), type: ePackage.eClass.get('name'), children})
             for (let eClassifier of ePackage.get('eClassifiers').array()) {
                 let children2: any[] = []
                 children.push({key: getId(eClassifier), name: getName(eClassifier), type: eClassifier.eClass.get('name'), children: children2});
