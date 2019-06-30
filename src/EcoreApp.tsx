@@ -23,9 +23,9 @@ export class EcoreApp extends React.Component<Props, State> {
         Resource.instance().fetchPackages().then(packages=>{
             this.setState({loaded: true})
         })
-        let id: string = '59bb208006149f50bb32f76f4901029b';
+        let id: string = '80e3cf351c5fc42ca3db8be939060fbe';
         Resource.instance().fetchEObject(id, 999).then(eObject => {
-            console.log(eObject);
+            console.log(eObject.eResource().to());
         })
     }
 

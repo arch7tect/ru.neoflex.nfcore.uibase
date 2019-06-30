@@ -88,11 +88,19 @@ export class Resource implements IErrorHandler {
         loading = loading || {}
         let rs = resourceSet || Ecore.ResourceSet.create();
 
-        let resid = ref.split('#')[0];
-        let refid = resid.split('?')[0];
+        function normalizeRef(ref: string): Array<string> {
+            let [resid, fragment] = ref.split('#', 2);
+            let id = resid.split('?')[0];
+            if (!fragment) {
+                fragment = '/';
+            }
+            return [id, fragment];
+        }
 
-        if (loading.hasOwnProperty(refid)) {
-            return loading[refid];
+        let id = normalizeRef(ref)[0];
+
+        if (loading.hasOwnProperty(id)) {
+            return loading[id];
         }
 
         function collectReferences(object: any, found: string[]): string[] {
@@ -101,7 +109,9 @@ export class Resource implements IErrorHandler {
             }
             let ref = object.$ref;
             if (ref) {
-                found.push(ref);
+                let [id, fragment] = normalizeRef(ref);
+                object.$ref = id + '#' + fragment;
+                found.push(object.$ref);
             }
             for(var i in object) {
                 if(object.hasOwnProperty(i)){
@@ -111,7 +121,7 @@ export class Resource implements IErrorHandler {
             return found;
         }
 
-        let result =  this.fetchJson(`/emf/object?ref=${refid}`).then(json=>{
+        let result =  this.fetchJson(`/emf/object?ref=${encodeURIComponent(id)}`).then(json=>{
             let refEObjects: Promise<any>[] = []
             if (level > 0) {
                 let refs = collectReferences(json, []);
@@ -120,13 +130,13 @@ export class Resource implements IErrorHandler {
                 })
             }
             return Promise.all(refEObjects).then(resources=>{
-                let resource = rs.create({ uri: resid });
+                let resource = rs.create({ uri: id });
                 resource.load(json);
                 let eObject = resource.get('contents').first();
                 return eObject;
             })
         })
-        loading[refid] = result;
+        loading[ref] = result;
         return result;
     }
 
