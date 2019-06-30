@@ -25,7 +25,13 @@ export class EcoreApp extends React.Component<Props, State> {
         })
         let id: string = '80e3cf351c5fc42ca3db8be939060fbe';
         Resource.instance().fetchEObject(id, 999).then(eObject => {
-            console.log(eObject.eResource().to());
+            console.log(eObject.eURI(), eObject.eResource().to());
+        })
+        let classURI = 'ru.neoflex.nfcore.base.auth#//User';
+        Resource.instance().findByClass(classURI).then((eObjects: any[]) => {
+            eObjects.forEach(eObject=>{
+                console.log(eObject.eURI(), eObject.eResource().to());
+            })
         })
     }
 
