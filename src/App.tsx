@@ -2,10 +2,10 @@ import React from 'react';
 import './App.css';
 import {EcoreApp} from "./EcoreApp";
 
-const App: React.FC = () => {
+const App: React.FC = (props) => {
   return (
     <div className="App">
-        <EcoreApp name="EcoreApp" />
+        <EcoreApp {...props} name="EcoreApp" />
     </div>
   );
 }

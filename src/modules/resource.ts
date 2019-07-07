@@ -90,7 +90,7 @@ export class Resource implements IErrorHandler {
         }
         let ref = object.$ref;
         if (ref) {
-            let [id, fragment] = Resource.normalizeRef(ref);
+            let {id, fragment} = Resource.parseRef(ref);
             object.$ref = id + '#' + fragment;
             found.push(object.$ref);
         }
@@ -102,45 +102,82 @@ export class Resource implements IErrorHandler {
         return found;
     }
 
-    static normalizeRef(ref: string): Array<string> {
+    static parseRef(ref: string): any {
         let [resid, fragment] = ref.split('#', 2);
-        let id = resid.split('?')[0];
         if (!fragment) {
             fragment = '/';
         }
-        return [id, fragment];
+        let [id, query] = resid.split('?', 2);
+        let rev = query && query.startsWith("rev=") ? query.substring(4) : undefined;
+        return {id, rev, fragment, query, resid};
     }
 
-    fetchEObject(ref: string, level: number = 1, resourceSet?: Ecore.ResourceSet, loading?: any): Promise<any> {
-        loading = loading || {}
-        let rs = resourceSet || Ecore.ResourceSet.create();
+    saveResource(resource: Ecore.Resource, level: number = 1): Promise<Ecore.Resource> {
+        let url = "/emf/resource";
+        let uri = resource.get('uri');
+        if (uri) {
+            let {id} = Resource.parseRef(uri);
+            let rev = resource.rev;
+            if (rev) {
+                id = id + '?rev=' + rev;
+            }
+            url = url + '?ref=' + encodeURIComponent(id);
+        }
+        return this.fetchJson(url, {
+            method: "PUT",
+            headers: {
+                'Accept': 'application/json',
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(resource.to())
+        }).then(json=>{
+            let {contents, uri} = json;
+            let jsonObject = contents[0];
+            let resourceSet = Ecore.ResourceSet.create();
+            let loading: any = {}
+            let promise =  this.loadEObjectWithRefs(level, jsonObject, resourceSet, loading, uri);
+            loading[Resource.parseRef(uri).id] = promise;
+            return promise;
+        })
+    }
 
-        let id = Resource.normalizeRef(ref)[0];
-
-        if (loading.hasOwnProperty(id)) {
-            return loading[id];
+    fetchResource(ref: string, level: number, resourceSet: Ecore.ResourceSet, loading: any): Promise<Ecore.Resource> {
+        let {id, fragment} = Resource.parseRef(ref);
+        let path = id + '#' + fragment;
+        if (loading.hasOwnProperty(path)) {
+            return loading[path];
         }
 
-        let result =  this.fetchJson(`/emf/object?ref=${encodeURIComponent(id)}`).then(json=>{
-            return this.loadEObjectWithRefs(level, json, rs, id);
+        let result =  this.fetchJson(`/emf/resource?ref=${encodeURIComponent(ref)}`).then(json=>{
+            let jsonObject = json.contents[0];
+            return this.loadEObjectWithRefs(level, jsonObject, resourceSet, loading, json.uri);
         })
-        loading[ref] = result;
+        loading[path] = result;
         return result;
     }
 
-    private loadEObjectWithRefs(level: number, json: any, rs: Ecore.ResourceSet, id: string, loading?: any) {
+    private loadEObjectWithRefs(level: number, jsonObject: any, resourceSet: Ecore.ResourceSet, loading: any, uri: string): Promise<Ecore.Resource> {
         let refEObjects: Promise<any>[] = []
         if (level > 0) {
-            let refs = Resource.collectReferences(json, []);
+            let refs = Resource.collectReferences(jsonObject, []);
             refEObjects = refs.map(ref => {
-                return this.fetchEObject(ref, level - 1, rs, loading);
+                return this.fetchResource(ref, level - 1, resourceSet, loading);
             })
         }
-        return Promise.all(refEObjects).then(resources => {
-            let resource = rs.create({uri: id});
-            resource.load(json);
-            let eObject = resource.get('contents').first();
-            return eObject;
+        return Promise.all(refEObjects).then(_ => {
+            let {id, rev} = Resource.parseRef(uri);
+            let resource = resourceSet.create({uri: id});
+            resource.rev = rev;
+            resource.load(jsonObject);
+            return resource
+        })
+    }
+
+    fetchEObject(ref: string, level: number = 1): Promise<Ecore.EObject> {
+        let resourceSet = Ecore.ResourceSet.create();
+        return this.fetchResource(ref, level, resourceSet, {}).then(_ => {
+            let lastResource: Ecore.Resource = resourceSet.get('resources').last();
+            return  lastResource.get('contents').first();
         })
     }
 
@@ -160,7 +197,7 @@ export class Resource implements IErrorHandler {
         })
     }
 
-    find(selection: any, level: number = 1): Promise<any> {
+    find(selection: any, level: number = 1): Promise<Ecore.Resource[]> {
         return this.fetchJson("/emf/find", {
             method: "POST",
             headers: {
@@ -171,19 +208,19 @@ export class Resource implements IErrorHandler {
         }).then(json=>{
             let rs = Ecore.ResourceSet.create();
             let loading = {};
-            let objects: Array<Promise<any>> = [];
-            for (let doc of json.docs as any[]) {
-                let id: string = doc._id;
-                let contents = doc.contents
-                contents._id = '/';
-                let object = this.loadEObjectWithRefs(level, contents, rs, id, loading);
-                objects.push(object);
+            let promises: Array<Promise<Ecore.Resource>> = [];
+            for (let resource of json.resources as any[]) {
+                let uri: string = resource.uri;
+                let eObjectJson = resource.contents[0]
+                eObjectJson._id = Resource.parseRef(uri)[1];
+                let aPromise = this.loadEObjectWithRefs(level, eObjectJson, rs, loading, uri);
+                promises.push(aPromise);
             }
-            return Promise.all(objects);
+            return Promise.all(promises);
         })
     }
 
-    findByClass(classURI: string, objectName?: string, level: number = 1): Promise<any> {
+    findByClass(classURI: string, objectName?: string, level: number = 1): Promise<Ecore.Resource[]> {
         let selection: any = {contents: {eClass: classURI}};
         if (objectName) {
             selection.contents['name'] = objectName;
