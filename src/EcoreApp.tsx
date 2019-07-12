@@ -4,6 +4,7 @@ import 'antd/dist/antd.css';
 //import {Ecore} from "ecore";
 //import {API} from './modules/resource'
 import {MetaBrowser} from "./components/MetaBrowser";
+import {ResourceEditor} from "./components/ResourceEditor"
 import {Link, Route, Switch, RouteComponentProps} from "react-router-dom";
 import {DataBrowser} from "./components/DataBrowser";
 
@@ -50,7 +51,8 @@ export class EcoreApp extends React.Component<any, State> {
                         <Content>
                             <Switch>
                                 <Route path='/metadata' component={MetaBrowser}/>
-                                <Route path='/data' component={DataBrowser}/>
+                                <Route exact={true} path='/data' component={DataBrowser}/>
+                                <Route path='/data/:id' component={ResourceEditor}/>
                             </Switch>
                         </Content>
                         <Footer style={{ textAlign: 'center' }}>Neoflex ©2019</Footer>

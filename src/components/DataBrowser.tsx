@@ -2,6 +2,7 @@ import * as React from "react";
 import {Row, Col, Table} from 'antd';
 import {Ecore} from "ecore";
 import {API} from "../modules/resource";
+import {Link} from "react-router-dom";
 //import debounce from "lodash/debounce"; 
 //import update from "immutability-helper"
 import forEach from "lodash/forEach"
@@ -100,8 +101,10 @@ export class DataBrowser extends React.Component<any, State> {
             fixed: 'right',
             width: 100,
             render: (text:string, record:any) => {
-                const editButton = <span id="edit" key={`edit${record.key}`} style={{ marginRight: 8 }} onClick={(e:any)=>this.handleEdit(e, record)}>Edit</span>
-                const deleteButton = <span id="delete" key={`delete${record.key}`} style={{ marginRight: 8 }} onClick={(e:any)=>this.handleDeleteResource(e, record)}>Delete</span>
+                const editButton = <Link key={`edit${record.key}`} to={`/data/${record.resource.get('uri')}`}>
+                    <span id="edit">Edit</span>
+                </Link>
+                const deleteButton = <span id="delete" key={`delete${record.key}`} style={{ marginLeft: 8 }} onClick={(e:any)=>this.handleDeleteResource(e, record)}>Delete</span>
                 return [editButton, deleteButton]
             }
         }]
