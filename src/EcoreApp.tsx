@@ -1,19 +1,20 @@
 import * as React from "react";
 import {Layout, Menu} from 'antd';
 import 'antd/dist/antd.css';
-import {Ecore} from "ecore";
-import {Resource} from './modules/resource'
+//import {Ecore} from "ecore";
+//import {API} from './modules/resource'
 import {MetaBrowser} from "./components/MetaBrowser";
 import {Link, Route, Switch, RouteComponentProps} from "react-router-dom";
 import {DataBrowser} from "./components/DataBrowser";
 
-const { Header, Content, Footer, Sider } = Layout;
+const { Content, Footer, Sider } = Layout;
 
 export interface Props extends RouteComponentProps {
     name: string;
 }
 
 interface State {
+    
 }
 
 export class EcoreApp extends React.Component<any, State> {

@@ -1,7 +1,7 @@
 import * as React from "react";
 import {Col, Row, Table} from 'antd';
 import {Ecore} from "ecore";
-import {Resource} from "../modules/resource";
+import {API} from "../modules/resource";
 
 export interface Props {
 }
@@ -14,7 +14,7 @@ export class MetaBrowser extends React.Component<Props, State> {
     state = {ePackages: Ecore.EPackage.Registry.ePackages()};
 
     componentDidMount(): void {
-        Resource.instance().fetchPackages().then(packages=>{
+        API.instance().fetchPackages().then(packages=>{
             this.setState({ePackages: packages})
         })
     }

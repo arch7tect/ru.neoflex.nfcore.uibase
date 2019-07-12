@@ -21,19 +21,19 @@ export interface IErrorHandler {
     handleError(error: Error): void;
 }
 
-export class Resource implements IErrorHandler {
-    private static _instance: Resource;
+export class API implements IErrorHandler {
+    private static _instance: API;
     private errorHandlers: Array<IErrorHandler>;
 
     private constructor() {
         this.errorHandlers = [this];
     }
 
-    static instance(): Resource {
-        if (!Resource._instance) {
-            Resource._instance = new Resource();
+    static instance(): API {
+        if (!API._instance) {
+            API._instance = new API();
         }
-        return Resource._instance;
+        return API._instance;
     }
 
     private reportError(error: Error): void {
@@ -90,13 +90,13 @@ export class Resource implements IErrorHandler {
         }
         let ref = object.$ref;
         if (ref) {
-            let {id, fragment} = Resource.parseRef(ref);
+            let {id, fragment} = API.parseRef(ref);
             object.$ref = id + '#' + fragment;
             found.push(object.$ref);
         }
         for(var i in object) {
             if(object.hasOwnProperty(i)){
-                Resource.collectReferences(object[i], found);
+                API.collectReferences(object[i], found);
             }
         }
         return found;
@@ -116,7 +116,7 @@ export class Resource implements IErrorHandler {
         let url = "/emf/resource";
         let uri = resource.get('uri');
         if (uri) {
-            let {id} = Resource.parseRef(uri);
+            let {id} = API.parseRef(uri);
             let rev = resource.rev;
             if (rev) {
                 id = id + '?rev=' + rev;
@@ -136,13 +136,13 @@ export class Resource implements IErrorHandler {
             let resourceSet = Ecore.ResourceSet.create();
             let loading: any = {}
             let promise =  this.loadEObjectWithRefs(level, jsonObject, resourceSet, loading, uri);
-            loading[Resource.parseRef(uri).id] = promise;
+            loading[API.parseRef(uri).id] = promise;
             return promise;
         })
     }
 
     fetchResource(ref: string, level: number, resourceSet: Ecore.ResourceSet, loading: any): Promise<Ecore.Resource> {
-        let {id, fragment} = Resource.parseRef(ref);
+        let {id, fragment} = API.parseRef(ref);
         let path = id + '#' + fragment;
         if (loading.hasOwnProperty(path)) {
             return loading[path];
@@ -159,13 +159,13 @@ export class Resource implements IErrorHandler {
     private loadEObjectWithRefs(level: number, jsonObject: any, resourceSet: Ecore.ResourceSet, loading: any, uri: string): Promise<Ecore.Resource> {
         let refEObjects: Promise<any>[] = []
         if (level > 0) {
-            let refs = Resource.collectReferences(jsonObject, []);
+            let refs = API.collectReferences(jsonObject, []);
             refEObjects = refs.map(ref => {
                 return this.fetchResource(ref, level - 1, resourceSet, loading);
             })
         }
         return Promise.all(refEObjects).then(_ => {
-            let {id, rev} = Resource.parseRef(uri);
+            let {id, rev} = API.parseRef(uri);
             let resource = resourceSet.create({uri: id});
             resource.rev = rev;
             resource.load(jsonObject);
@@ -212,11 +212,28 @@ export class Resource implements IErrorHandler {
             for (let resource of json.resources as any[]) {
                 let uri: string = resource.uri;
                 let eObjectJson = resource.contents[0]
-                eObjectJson._id = Resource.parseRef(uri)[1];
+                eObjectJson._id = API.parseRef(uri).fragment;
                 let aPromise = this.loadEObjectWithRefs(level, eObjectJson, rs, loading, uri);
                 promises.push(aPromise);
             }
             return Promise.all(promises);
+        })
+    }
+
+    fetchAllClasses(includeBasicPackages: Boolean = true): Promise<Ecore.EObject[]>{
+        const basicPackages: Array<String> = ["ecore", "resources"]
+        return this.fetchPackages().then(packages=>{
+            let classes:Ecore.EObject[] = []
+            for(let pack of packages){
+                const isBasic: Boolean = basicPackages.includes(pack.get('name')) 
+                const econtent: Ecore.EObject[] = pack.eContents()
+                if(includeBasicPackages){
+                    classes = [...classes, ...econtent]
+                }else{
+                    if(!isBasic) classes = [...classes, ...econtent]
+                }
+            }
+            return classes
         })
     }
 
@@ -226,5 +243,15 @@ export class Resource implements IErrorHandler {
             selection.contents['name'] = objectName;
         }
         return this.find(selection, level);
+    }
+
+    deleteResource(ref: string): Promise<any>{
+        return this.fetchJson(`/emf/resource?ref=${encodeURIComponent(ref)}`, {
+            method: "DELETE",
+            headers: {
+                'Accept': 'application/json',
+                'Content-Type': 'application/json'
+            }
+        })
     }
 }
