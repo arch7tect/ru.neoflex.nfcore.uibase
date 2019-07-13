@@ -5,8 +5,9 @@ import 'antd/dist/antd.css';
 //import {API} from './modules/resource'
 import {MetaBrowser} from "./components/MetaBrowser";
 import {ResourceEditor} from "./components/ResourceEditor"
-import {NavLink, Route, Switch, RouteComponentProps} from "react-router-dom";
+import {Link, Route, Switch, RouteComponentProps} from "react-router-dom";
 import {DataBrowser} from "./components/DataBrowser";
+import {QueryRunner} from "./components/QueryRunner";
 
 const { Content, Footer, Sider } = Layout;
 
@@ -38,23 +39,25 @@ export class EcoreApp extends React.Component<any, State> {
     }
 
     render() {
-        let selectedKeys = ['metadata', 'data']
+        let selectedKeys = ['metadata', 'data', 'query']
             .filter(k=>this.props.location.pathname.split('/').includes(k))
         return (
             <Layout>
                 <Layout>
                     <Sider collapsible breakpoint="lg" collapsedWidth="0">
                         <Menu theme="dark" mode="inline" selectedKeys={selectedKeys}>
-                            <Menu.Item key={'metadata'}><NavLink to={`/metadata`}>Metadata</NavLink></Menu.Item>
-                            <Menu.Item key={'data'}><NavLink to={`/data`}>Data</NavLink></Menu.Item>
+                            <Menu.Item key={'metadata'}><Link to={`/metadata`}>Metadata</Link></Menu.Item>
+                            <Menu.Item key={'data'}><Link to={`/data`}>Data</Link></Menu.Item>
+                            <Menu.Item key={'query'}><Link to={`/query`}>Query</Link></Menu.Item>
                         </Menu>
                     </Sider>
-                    <Layout style={{ height: '100%' }}>
+                    <Layout style={{ height: '100vh' }}>
                         <Content>
                             <Switch>
                                 <Route path='/metadata' component={MetaBrowser}/>
                                 <Route exact={true} path='/data' component={DataBrowser}/>
                                 <Route path='/data/:id' component={ResourceEditor}/>
+                                <Route path='/query' component={QueryRunner}/>
                             </Switch>
                         </Content>
                         <Footer style={{ textAlign: 'center' }}>Neoflex ©2019</Footer>

@@ -34,6 +34,7 @@ export class API implements IErrorHandler {
     static instance(): API {
         if (!API._instance) {
             API._instance = new API();
+            API._instance.fetchPackages();
         }
         return API._instance;
     }
