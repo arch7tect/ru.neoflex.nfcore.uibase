@@ -25,7 +25,7 @@ export class QueryRunner extends React.Component<any, State> {
     }
 
     run = () => {
-        API.instance().find(JSON.parse(this.state.json)).then((resources)=>{
+        API.instance().find(JSON.parse(this.state.json)).then((resources: Ecore.Resource[])=>{
             const result = resources.map(r=>r.to());
             this.setState({result: JSON.stringify(result, null, 4)});
         })
