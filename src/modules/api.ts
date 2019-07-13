@@ -224,13 +224,13 @@ export class API implements IErrorHandler {
         })
     }
 
-    fetchAllClasses(includeBasicPackages: Boolean = true): Promise<Ecore.EObject[]> {
+    fetchAllClasses(includeBasicPackages: Boolean = true): Promise<Ecore.EClass[]> {
         const basicPackages: Array<String> = ["ecore", "resources"]
         return this.fetchPackages().then(packages => {
             return packages
                 .filter(p=>includeBasicPackages || !basicPackages.includes(p.get('name')))
                 .map(p=>p.eContents().filter(c => c.isTypeOf('EClass')))
-                .flat()
+                .flat() as Ecore.EClass[];
         })
     }
 

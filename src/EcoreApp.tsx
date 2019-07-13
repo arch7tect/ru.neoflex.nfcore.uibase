@@ -5,7 +5,7 @@ import 'antd/dist/antd.css';
 //import {API} from './modules/resource'
 import {MetaBrowser} from "./components/MetaBrowser";
 import {ResourceEditor} from "./components/ResourceEditor"
-import {Link, Route, Switch, RouteComponentProps} from "react-router-dom";
+import {NavLink, Route, Switch, RouteComponentProps} from "react-router-dom";
 import {DataBrowser} from "./components/DataBrowser";
 
 const { Content, Footer, Sider } = Layout;
@@ -38,13 +38,15 @@ export class EcoreApp extends React.Component<any, State> {
     }
 
     render() {
+        let selectedKeys = ['metadata', 'data']
+            .filter(k=>this.props.location.pathname.split('/').includes(k))
         return (
             <Layout>
                 <Layout>
                     <Sider collapsible breakpoint="lg" collapsedWidth="0">
-                        <Menu theme="dark" mode="inline" selectedKeys={[this.props.location.pathname]} defaultSelectedKeys={['/metadata']}>
-                            <Menu.Item key={'/metadata'}><Link to={`/metadata`}>Metadata</Link></Menu.Item>
-                            <Menu.Item key={'/data'}><Link to={`/data`}>Data</Link></Menu.Item>
+                        <Menu theme="dark" mode="inline" selectedKeys={selectedKeys}>
+                            <Menu.Item key={'metadata'}><NavLink to={`/metadata`}>Metadata</NavLink></Menu.Item>
+                            <Menu.Item key={'data'}><NavLink to={`/data`}>Data</NavLink></Menu.Item>
                         </Menu>
                     </Sider>
                     <Layout style={{ height: '100%' }}>
