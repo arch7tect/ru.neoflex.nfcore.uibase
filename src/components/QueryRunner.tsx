@@ -1,6 +1,6 @@
 import * as React from "react";
 import {Form, Button, Tooltip} from 'antd';
-import { Ecore } from "ecore";
+//import { Ecore } from "ecore";
 import { API } from "../modules/api";
 import SplitPane from 'react-split-pane';
 import {Icon as IconFA} from 'react-fa';
@@ -25,9 +25,12 @@ export class QueryRunner extends React.Component<any, State> {
     }
 
     run = () => {
-        API.instance().find(JSON.parse(this.state.json)).then((resources: Ecore.Resource[])=>{
-            const result = resources.map(r=>r.to());
-            this.setState({result: JSON.stringify(result, null, 4)});
+        API.instance().find(JSON.parse(this.state.json)).then(results=>{
+            const {executionStats, resources, bookmark, warning} = results;
+            const objects = resources.map(r=>
+                Object.assign(r.to(), {$ref: `${r.get('uri')}?rev=${r.rev}`})
+            );
+            this.setState({result: JSON.stringify({objects, executionStats, bookmark, warning}, null, 4)});
         })
     }
 

@@ -22,6 +22,13 @@ export interface IErrorHandler {
     handleError(error: Error): void;
 }
 
+export interface QueryResult {
+    executionStats: any;
+    resources: Ecore.Resource[];
+    bookmark: string;
+    warning: string;
+}
+
 export class API implements IErrorHandler {
     private static _instance: API;
     private errorHandlers: Array<IErrorHandler>;
@@ -202,7 +209,7 @@ export class API implements IErrorHandler {
         })
     }
 
-    find(selection: any, level: number = 1): Promise<Ecore.Resource[]> {
+    find(selection: any, level: number = 1): Promise<QueryResult> {
         return this.fetchJson("/emf/find", {
             method: "POST",
             headers: {
@@ -211,17 +218,19 @@ export class API implements IErrorHandler {
             },
             body: JSON.stringify(selection)
         }).then(json => {
+            let {executionStats, resources, bookmark, warning} = json;
             let rs = Ecore.ResourceSet.create();
             let loading = {};
             let promises: Array<Promise<Ecore.Resource>> = [];
-            for (let resource of json.resources as any[]) {
+            for (let resource of resources as any[]) {
                 let uri: string = resource.uri;
                 let eObjectJson = resource.contents[0]
                 eObjectJson._id = API.parseRef(uri).fragment;
                 let aPromise = this.loadEObjectWithRefs(level, eObjectJson, rs, loading, uri);
                 promises.push(aPromise);
             }
-            return Promise.all(promises);
+            return Promise.all(promises).then(resources=>(
+                {resources, executionStats, bookmark, warning}));
         })
     }
 
@@ -254,7 +263,7 @@ export class API implements IErrorHandler {
         if (objectName) {
             selection.contents['name'] = objectName;
         }
-        return this.find(selection, level);
+        return this.find(selection, level).then(r=>r.resources);
     }
 
     deleteResource(ref: string): Promise<any> {
