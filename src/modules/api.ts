@@ -58,7 +58,7 @@ export class API implements IErrorHandler {
     }
 
     fetchJson(input: RequestInfo, init?: RequestInit): Promise<any> {
-        console.log("FETCH: " + input + ' ' + JSON.stringify(init));
+        console.log("FETCH: " + input + ' ' + (init?JSON.stringify(init):''));
         return this.fetch(input, init).then(response => response.json());
     }
 
@@ -236,12 +236,9 @@ export class API implements IErrorHandler {
     }
 
     findByKind(eClass: Ecore.EClass, objectName?: string, level: number = 1): Promise<Ecore.Resource[]> {
-        const eAllSubTypes: Ecore.EClass[] = (eClass.get('eAllSubTypes') as Ecore.EClass[])
-            .filter(c => !c.get('abstract'));
-        if (!eClass.get('abstract')) {
-            eAllSubTypes.splice(0, 0, eClass);
-        }
-        const promises: Promise<Ecore.Resource[]>[] = eAllSubTypes
+        const eAllSubTypes: Ecore.EClass[] = (eClass.get('eAllSubTypes') as Ecore.EClass[]);
+        const promises: Promise<Ecore.Resource[]>[] = [eClass, ...eAllSubTypes]
+            .filter(c => !c.get('abstract'))
             .map(c => this.findByClass(c, objectName, level));
         return Promise.all(promises).then((resources: Ecore.Resource[][]) => {
             return resources.flat();
