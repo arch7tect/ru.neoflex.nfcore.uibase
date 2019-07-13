@@ -12,7 +12,8 @@ export class Error {
     static fromResponce(response: Response): Error {
         return new Error({error: response.statusText, status: response.status, path: response.url, cause: response})
     }
-    constructor(init?:Partial<Error>) {
+
+    constructor(init?: Partial<Error>) {
         Object.assign(this, init);
     }
 }
@@ -24,6 +25,7 @@ export interface IErrorHandler {
 export class API implements IErrorHandler {
     private static _instance: API;
     private errorHandlers: Array<IErrorHandler>;
+    private ePackages: Ecore.EPackage[] = [];
 
     private constructor() {
         this.errorHandlers = [this];
@@ -37,7 +39,7 @@ export class API implements IErrorHandler {
     }
 
     private reportError(error: Error): void {
-        this.errorHandlers.forEach(h=>h.handleError(error))
+        this.errorHandlers.forEach(h => h.handleError(error))
     }
 
     addErrorHandler(handler: IErrorHandler) {
@@ -56,11 +58,12 @@ export class API implements IErrorHandler {
     }
 
     fetchJson(input: RequestInfo, init?: RequestInit): Promise<any> {
+        console.log("FETCH: " + input + ' ' + JSON.stringify(init));
         return this.fetch(input, init).then(response => response.json());
     }
 
     fetch(input: RequestInfo, init?: RequestInit): Promise<any> {
-        return fetch(input, init).then(response=>{
+        return fetch(input, init).then(response => {
             if (!response.ok) {
                 throw response;
             }
@@ -68,16 +71,14 @@ export class API implements IErrorHandler {
         }).catch((error) => {
             if (error instanceof Error) {
                 this.reportError(error)
-            }
-            else if (error instanceof Response) {
+            } else if (error instanceof Response) {
                 let response = error as Response;
                 response.json().then(json => {
                     this.reportError(new Error(Object.assign({}, json, {cause: response})));
                 }).catch(error => {
                     this.reportError(Error.fromResponce(response));
                 })
-            }
-            else {
+            } else {
                 this.reportError(new Error(Object.assign({}, error, {cause: error})));
             }
             return Promise.reject(error)
@@ -94,8 +95,8 @@ export class API implements IErrorHandler {
             object.$ref = id + '#' + fragment;
             found.push(object.$ref);
         }
-        for(var i in object) {
-            if(object.hasOwnProperty(i)){
+        for (var i in object) {
+            if (object.hasOwnProperty(i)) {
                 API.collectReferences(object[i], found);
             }
         }
@@ -130,12 +131,12 @@ export class API implements IErrorHandler {
                 'Content-Type': 'application/json'
             },
             body: JSON.stringify(resource.to())
-        }).then(json=>{
+        }).then(json => {
             let {contents, uri} = json;
             let jsonObject = contents[0];
             let resourceSet = Ecore.ResourceSet.create();
             let loading: any = {}
-            let promise =  this.loadEObjectWithRefs(level, jsonObject, resourceSet, loading, uri);
+            let promise = this.loadEObjectWithRefs(level, jsonObject, resourceSet, loading, uri);
             loading[API.parseRef(uri).id] = promise;
             return promise;
         })
@@ -148,7 +149,7 @@ export class API implements IErrorHandler {
             return loading[path];
         }
 
-        let result =  this.fetchJson(`/emf/resource?ref=${encodeURIComponent(ref)}`).then(json=>{
+        let result = this.fetchJson(`/emf/resource?ref=${encodeURIComponent(ref)}`).then(json => {
             let jsonObject = json.contents[0];
             return this.loadEObjectWithRefs(level, jsonObject, resourceSet, loading, json.uri);
         })
@@ -177,11 +178,14 @@ export class API implements IErrorHandler {
         let resourceSet = Ecore.ResourceSet.create();
         return this.fetchResource(ref, level, resourceSet, {}).then(_ => {
             let lastResource: Ecore.Resource = resourceSet.get('resources').last();
-            return  lastResource.get('contents').first();
+            return lastResource.get('contents').first();
         })
     }
 
     fetchPackages(): Promise<Ecore.EPackage[]> {
+        if (this.ePackages.length > 0) {
+            return Promise.resolve(this.ePackages);
+        }
         return this.fetchJson("/emf/packages").then(json => {
             Ecore.EPackage.Registry.ePackages().splice(2);
             let resourceSet = Ecore.ResourceSet.create();
@@ -193,7 +197,8 @@ export class API implements IErrorHandler {
                     Ecore.EPackage.Registry.register(ePackage);
                 })
             }
-            return Ecore.EPackage.Registry.ePackages()
+            this.ePackages.push(...Ecore.EPackage.Registry.ePackages());
+            return this.ePackages;
         })
     }
 
@@ -205,7 +210,7 @@ export class API implements IErrorHandler {
                 'Content-Type': 'application/json'
             },
             body: JSON.stringify(selection)
-        }).then(json=>{
+        }).then(json => {
             let rs = Ecore.ResourceSet.create();
             let loading = {};
             let promises: Array<Promise<Ecore.Resource>> = [];
@@ -220,24 +225,34 @@ export class API implements IErrorHandler {
         })
     }
 
-    fetchAllClasses(includeBasicPackages: Boolean = true): Promise<Ecore.EObject[]>{
+    fetchAllClasses(includeBasicPackages: Boolean = true): Promise<Ecore.EObject[]> {
         const basicPackages: Array<String> = ["ecore", "resources"]
-        return this.fetchPackages().then(packages=>{
-            let classes:Ecore.EObject[] = []
-            for(let pack of packages){
-                const isBasic: Boolean = basicPackages.includes(pack.get('name')) 
-                const econtent: Ecore.EObject[] = pack.eContents()
-                if(includeBasicPackages){
-                    classes = [...classes, ...econtent]
-                }else{
-                    if(!isBasic) classes = [...classes, ...econtent]
-                }
-            }
-            return classes
+        return this.fetchPackages().then(packages => {
+            return packages
+                .filter(p=>includeBasicPackages || !basicPackages.includes(p.get('name')))
+                .map(p=>p.eContents().filter(c => c.isTypeOf('EClass')))
+                .flat()
         })
     }
 
-    findByClass(classURI: string, objectName?: string, level: number = 1): Promise<Ecore.Resource[]> {
+    findByKind(eClass: Ecore.EClass, objectName?: string, level: number = 1): Promise<Ecore.Resource[]> {
+        const eAllSubTypes: Ecore.EClass[] = (eClass.get('eAllSubTypes') as Ecore.EClass[])
+            .filter(c => !c.get('abstract'));
+        if (!eClass.get('abstract')) {
+            eAllSubTypes.splice(0, 0, eClass);
+        }
+        const promises: Promise<Ecore.Resource[]>[] = eAllSubTypes
+            .map(c => this.findByClass(c, objectName, level));
+        return Promise.all(promises).then((resources: Ecore.Resource[][]) => {
+            return resources.flat();
+        })
+    }
+
+    findByClass(eClass: Ecore.EClass, objectName?: string, level: number = 1): Promise<Ecore.Resource[]> {
+        return this.findByClassURI(eClass.eURI(), objectName, level);
+    }
+
+    findByClassURI(classURI: string, objectName?: string, level: number = 1): Promise<Ecore.Resource[]> {
         let selection: any = {contents: {eClass: classURI}};
         if (objectName) {
             selection.contents['name'] = objectName;
@@ -245,7 +260,7 @@ export class API implements IErrorHandler {
         return this.find(selection, level);
     }
 
-    deleteResource(ref: string): Promise<any>{
+    deleteResource(ref: string): Promise<any> {
         return this.fetchJson(`/emf/resource?ref=${encodeURIComponent(ref)}`, {
             method: "DELETE",
             headers: {

@@ -1,7 +1,7 @@
 import * as React from "react";
 import {Row, Col, Table} from 'antd';
 import {Ecore} from "ecore";
-import {API} from "../modules/resource";
+import {API} from "../modules/api";
 import {Link} from "react-router-dom";
 //import debounce from "lodash/debounce"; 
 //import update from "immutability-helper"
@@ -34,14 +34,14 @@ export class DataBrowser extends React.Component<any, State> {
 
     getEClasses(): void {
         API.instance().fetchAllClasses(false).then(classes=>{
-            const filtered = classes.filter((c: Ecore.EObject) => c.get('abstract') === false || c.get('abstract') === undefined)
+            const filtered = classes.filter((c: Ecore.EObject) => !c.get('interface'))
             this.setState({ classes: filtered })
         })
     }
 
     handleSearch = (event:any) => {
         let selectedClassObject:Ecore.EObject|undefined = this.state.classes.find((c:Ecore.EObject) => c.get('name') === this.state.selectedType);
-        selectedClassObject && API.instance().findByClass((selectedClassObject as Ecore.EObject).eURI(), this.state.searchName).then(resources =>{
+        selectedClassObject && API.instance().findByKind(selectedClassObject as Ecore.EClass, this.state.searchName).then(resources =>{
             const tableData:Array<any> = this.prepareTableData(resources)
             const columns:Array<any> = resources.length > 0 ? Object.keys(resources[0].to()).map((attr)=> ({title: attr, dataIndex: attr, key: attr})) : []
             this.setState({ resources: resources, tableData: tableData, columns: columns})

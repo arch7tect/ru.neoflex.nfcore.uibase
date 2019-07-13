@@ -31,7 +31,7 @@ export class EcoreApp extends React.Component<any, State> {
                     console.log(eObject.eURI(), eObject.eResource().to());
                 })
                 let classURI = 'ru.neoflex.nfcore.base.auth#//User';
-                Resource.instance().findByClass(classURI).then((resources: Ecore.Resource[]) => {
+                Resource.instance().findByClassURI(classURI).then((resources: Ecore.Resource[]) => {
                     resources.forEach(resource=>console.log(resource.to()));
                 })
          */
