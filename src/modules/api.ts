@@ -187,7 +187,6 @@ export class API implements IErrorHandler {
             return Promise.resolve(this.ePackages);
         }
         return this.fetchJson("/emf/packages").then(json => {
-            Ecore.EPackage.Registry.ePackages().splice(2);
             let resourceSet = Ecore.ResourceSet.create();
             for (let aPackage of json as any[]) {
                 let uri = aPackage['nsURI'];
