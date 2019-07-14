@@ -14,14 +14,14 @@ export interface Props {
 interface State {
     json: string;
     result: string;
-    splitterPosition: string;
+    splitterPosition: number;
 }
 
 export class QueryRunner extends React.Component<any, State> {
     state = {
         json: JSON.stringify({contents: {eClass: "ru.neoflex.nfcore.base.auth#//User"}}, null, 4),
         result: '',
-        splitterPosition: '50%'
+        splitterPosition: 50
     }
 
     run = () => {
@@ -32,6 +32,22 @@ export class QueryRunner extends React.Component<any, State> {
             );
             this.setState({result: JSON.stringify({objects, executionStats, bookmark, warning}, null, 4)});
         })
+    }
+
+    resizeEditors = () => {
+        (this.refs.aceEditor as AceEditor).editor.resize()
+        if (this.refs.console) {
+            (this.refs.console as AceEditor).editor.resize()
+        }
+    }
+
+    onSplitterChange = (value: number) => {
+        this.resizeEditors();
+        this.setState({splitterPosition: value});
+    }
+
+    onJsonChange = (json: string) => {
+        this.setState({json})
     }
 
     render() {
@@ -47,24 +63,16 @@ export class QueryRunner extends React.Component<any, State> {
                     </Form.Item>
                 </Form>
                 <div style={{flexGrow: 1}}>
-                    <SplitPane split="horizontal" primary="first" minSize={"50px"}
-                               size={this.state.splitterPosition}
-                               onChange={values => {
-                                   (this.refs.aceEditor as AceEditor).editor.resize()
-                                   if (this.refs.console) {
-                                       (this.refs.console as AceEditor).editor.resize()
-                                   }
-                                   this.setState({splitterPosition: ((values as unknown) as string[])[1]})
-                               }}
+                    <SplitPane split="horizontal" primary="first" minSize={10}
+                               defaultSize={this.state.splitterPosition}
+                               onChange={this.onSplitterChange}
                     >
                         <div style={{height: '100%', width: '100%', overflow: 'auto'}}>
                             <AceEditor
                                 ref={"aceEditor"}
                                 mode={"json"}
                                 width={""}
-                                onChange={(json) => {
-                                    this.setState({json})
-                                }}
+                                onChange={this.onJsonChange}
                                 editorProps={{$blockScrolling: true}}
                                 value={this.state.json}
                                 theme={"tomorrow"}
