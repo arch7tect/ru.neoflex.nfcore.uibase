@@ -9,7 +9,7 @@ import {Link, Route, Switch, RouteComponentProps} from "react-router-dom";
 import {DataBrowser} from "./components/DataBrowser";
 import {QueryRunner} from "./components/QueryRunner";
 
-const { Content, Footer, Sider } = Layout;
+const { Content, Sider } = Layout;
 
 export interface Props extends RouteComponentProps {
     name: string;
@@ -60,7 +60,6 @@ export class EcoreApp extends React.Component<any, State> {
                                 <Route path='/query' component={QueryRunner}/>
                             </Switch>
                         </Content>
-                        <Footer style={{ textAlign: 'center' }}>Neoflex ©2019</Footer>
                     </Layout>
                 </Layout>
             </Layout>

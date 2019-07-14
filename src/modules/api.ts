@@ -32,7 +32,7 @@ export interface QueryResult {
 export class API implements IErrorHandler {
     private static _instance: API;
     private errorHandlers: Array<IErrorHandler>;
-    private ePackages: Ecore.EPackage[] = [];
+    private ePackagesPromise: any;
 
     private constructor() {
         this.errorHandlers = [this];
@@ -191,22 +191,21 @@ export class API implements IErrorHandler {
     }
 
     fetchPackages(): Promise<Ecore.EPackage[]> {
-        if (this.ePackages.length > 0) {
-            return Promise.resolve(this.ePackages);
+        if (!this.ePackagesPromise) {
+            this.ePackagesPromise = this.fetchJson("/emf/packages").then(json => {
+                let resourceSet = Ecore.ResourceSet.create();
+                for (let aPackage of json as any[]) {
+                    let uri = aPackage['nsURI'];
+                    let resource = resourceSet.create({uri});
+                    resource.load(aPackage);
+                    resource.get('contents').each((ePackage: Ecore.EPackage) => {
+                        Ecore.EPackage.Registry.register(ePackage);
+                    })
+                }
+                return Ecore.EPackage.Registry.ePackages();
+            })
         }
-        return this.fetchJson("/emf/packages").then(json => {
-            let resourceSet = Ecore.ResourceSet.create();
-            for (let aPackage of json as any[]) {
-                let uri = aPackage['nsURI'];
-                let resource = resourceSet.create({uri});
-                resource.load(aPackage);
-                resource.get('contents').each((ePackage: Ecore.EPackage) => {
-                    Ecore.EPackage.Registry.register(ePackage);
-                })
-            }
-            this.ePackages.push(...Ecore.EPackage.Registry.ePackages());
-            return this.ePackages;
-        })
+        return this.ePackagesPromise as Promise<Ecore.EPackage[]>;
     }
 
     find(selection: any, level: number = 1): Promise<QueryResult> {

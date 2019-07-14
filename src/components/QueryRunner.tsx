@@ -47,8 +47,8 @@ export class QueryRunner extends React.Component<any, State> {
                     </Form.Item>
                 </Form>
                 <div style={{flexGrow: 1}}>
-                    <SplitPane split="horizontal" primary="first" minSize={"50%"}
-                               defaultSize={this.state.splitterPosition}
+                    <SplitPane split="horizontal" primary="first" minSize={"50px"}
+                               size={this.state.splitterPosition}
                                onChange={values => {
                                    (this.refs.aceEditor as AceEditor).editor.resize()
                                    if (this.refs.console) {
