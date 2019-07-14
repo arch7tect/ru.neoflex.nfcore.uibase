@@ -30,6 +30,7 @@ export class QueryRunner extends React.Component<any, State> {
             const objects = resources.map(r=>
                 Object.assign(r.to(), {$ref: `${r.get('uri')}?rev=${r.rev}`})
             );
+            this.resizeEditors()
             this.setState({result: JSON.stringify({objects, executionStats, bookmark, warning}, null, 4)});
         })
     }
@@ -47,6 +48,7 @@ export class QueryRunner extends React.Component<any, State> {
     }
 
     onJsonChange = (json: string) => {
+        this.resizeEditors();
         this.setState({json})
     }
 
@@ -75,6 +77,7 @@ export class QueryRunner extends React.Component<any, State> {
                                 onChange={this.onJsonChange}
                                 editorProps={{$blockScrolling: true}}
                                 value={this.state.json}
+                                showPrintMargin={false}
                                 theme={"tomorrow"}
                                 debounceChangePeriod={500}
                                 height={"100%"}
@@ -88,7 +91,6 @@ export class QueryRunner extends React.Component<any, State> {
                                 width={''}
                                 height={'100%'}
                                 theme={'tomorrow'}
-                                fontSize={15}
                                 editorProps={{$blockScrolling: Infinity}}
                                 value={this.state.result}
                                 showPrintMargin={false}
