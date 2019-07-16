@@ -2,8 +2,9 @@ import * as React from "react";
 import { Row, Col, Tree, Icon } from 'antd';
 import { Ecore } from "ecore";
 //import { API } from "../modules/resource";
-import SplitPane from 'react-split-pane';
+//import SplitPane from 'react-split-pane';
 //import Pane from 'react-split-pane/lib/Pane';
+import Splitter from 'm-react-splitters'
 
 export interface Props {
 }
@@ -19,6 +20,14 @@ interface State {
 }
 
 export class ResourceEditor extends React.Component<any, State> {
+
+    private splitterRef: React.RefObject<any>
+
+    constructor(props: any) {
+        super(props);
+        this.splitterRef = React.createRef();
+    }
+
     state = {
         classes: [],
         selectedType: "",
@@ -56,33 +65,32 @@ export class ResourceEditor extends React.Component<any, State> {
     render() {
 
         return (
-            <React.Fragment>
-                <Row>
-                    <Col span={24}>
-                        <SplitPane
-                            split="horizontal"
-                            primary="first"
-                            //size={ localStorage.getItem('splitPos') }
-                            //onChange={ (size:any) => {
-                                //localStorage.setItem('splitPos', size)
-                            //}}>
-                        >
+                <div style={{display: 'flex', flexFlow: 'column', height: '100%'}}>
+                    <div style={{ flexGrow: 1 }}>
+                    <Splitter
+                        ref={this.splitterRef}
+                        position="horizontal"
+                        primaryPaneMaxHeight="80%"
+                        primaryPaneMinHeight={0}
+                        primaryPaneHeight={localStorage.getItem('resource_splitter_pos') || "400px"}
+                        dispatchResize={true}
+                        postPoned={false}
+                        onDragFinished={()=>{
+                            const size:string = this.splitterRef.current!.panePrimary.props.style.height
+                            localStorage.setItem('resource_splitter_pos', size)
+                        }}
+                    >
                             <div style={{ height: '100%', width: '100%', overflow: 'auto' }}>
                                 {this.createTree()}
                             </div>
                             <div
                                 style={{ height: '100%', width: '100%', overflow: 'auto' }}
                             >
-                                { <div>
-                                    Yo,
-                                </div> }
+                            test
                             </div>
-                        </SplitPane>
-                        
-                    </Col>
-
-                </Row>
-            </React.Fragment>
+                        </Splitter>
+                    </div>
+                </div>
         );
     }
 }

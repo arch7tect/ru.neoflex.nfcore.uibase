@@ -2,7 +2,6 @@ import * as React from "react";
 import {Form, Button, Tooltip} from 'antd';
 //import { Ecore } from "ecore";
 import { API } from "../modules/api";
-//import SplitPane from 'react-split-pane';
 import {Icon as IconFA} from 'react-fa';
 import AceEditor from "react-ace";
 import 'brace/mode/json';
@@ -18,7 +17,16 @@ interface State {
     splitterPosition: number;
 }
 
+
 export class QueryRunner extends React.Component<any, State> {
+
+    private splitterRef: React.RefObject<any>
+    
+    constructor(props: any) {
+        super(props);
+        this.splitterRef = React.createRef();
+    }
+
     state = {
         json: JSON.stringify({contents: {eClass: "ru.neoflex.nfcore.base.auth#//User"}}, null, 4),
         result: '',
@@ -67,15 +75,16 @@ export class QueryRunner extends React.Component<any, State> {
                 </Form>
                 <div style={{ flexGrow: 1 }}>
                     <Splitter
+                        ref={this.splitterRef}
                         position="horizontal"
                         primaryPaneMaxHeight="80%"
                         primaryPaneMinHeight={0}
-                        primaryPaneHeight="400px"
+                        primaryPaneHeight={localStorage.getItem('query_splitter_pos') || "400px"}
                         dispatchResize={true}
                         postPoned={false}
                         onDragFinished={()=>{
-                            console.log('test')
-                            //localStorage.setItem('splitPosition', size)
+                            const size:string = this.splitterRef.current!.panePrimary.props.style.height
+                            localStorage.setItem('query_splitter_pos', size)
                         }}
                     >
                         <div style={{ height: '100%', width: '100%', overflow: 'auto' }}>
