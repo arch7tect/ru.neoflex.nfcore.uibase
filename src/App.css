@@ -1,5 +1,5 @@
 .App {
-  text-align: center;
+  /*text-align: center;*/
 }
 
 .App-logo {
@@ -41,4 +41,10 @@
 #delete:hover {
   color: #dd1b1b;
   cursor: pointer;
+}
+
+.ant-layout-sider-zero-width-trigger{
+  bottom: 0px !important;
+  top: initial !important;
+  z-index: 5 !important;
 }
