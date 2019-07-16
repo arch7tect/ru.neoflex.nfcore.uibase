@@ -2,11 +2,12 @@ import * as React from "react";
 import {Form, Button, Tooltip} from 'antd';
 //import { Ecore } from "ecore";
 import { API } from "../modules/api";
-import SplitPane from 'react-split-pane';
+//import SplitPane from 'react-split-pane';
 import {Icon as IconFA} from 'react-fa';
 import AceEditor from "react-ace";
 import 'brace/mode/json';
 import 'brace/theme/tomorrow';
+import Splitter from 'm-react-splitters'
 
 export interface Props {
 }
@@ -42,7 +43,7 @@ export class QueryRunner extends React.Component<any, State> {
         }
     }
 
-    onSplitterChange = (value: number) => {
+    onSplitterChange = (value: number): void => {
         this.resizeEditors();
         this.setState({splitterPosition: value});
     }
@@ -64,18 +65,26 @@ export class QueryRunner extends React.Component<any, State> {
                         </Tooltip>
                     </Form.Item>
                 </Form>
-                <div style={{flexGrow: 1}}>
-                    <SplitPane split="horizontal" primary="first" minSize={10}
-                               defaultSize={this.state.splitterPosition}
-                               onChange={this.onSplitterChange}
+                <div style={{ flexGrow: 1 }}>
+                    <Splitter
+                        position="horizontal"
+                        primaryPaneMaxHeight="80%"
+                        primaryPaneMinHeight={0}
+                        primaryPaneHeight="400px"
+                        dispatchResize={true}
+                        postPoned={false}
+                        onDragFinished={()=>{
+                            console.log('test')
+                            //localStorage.setItem('splitPosition', size)
+                        }}
                     >
-                        <div style={{height: '100%', width: '100%', overflow: 'auto'}}>
+                        <div style={{ height: '100%', width: '100%', overflow: 'auto' }}>
                             <AceEditor
                                 ref={"aceEditor"}
                                 mode={"json"}
                                 width={""}
                                 onChange={this.onJsonChange}
-                                editorProps={{$blockScrolling: true}}
+                                editorProps={{ $blockScrolling: true }}
                                 value={this.state.json}
                                 showPrintMargin={false}
                                 theme={"tomorrow"}
@@ -84,14 +93,14 @@ export class QueryRunner extends React.Component<any, State> {
                                 minLines={5}
                             />
                         </div>
-                        <div style={{height: '100%', width: '100%', overflow: 'auto'}}>
+                        <div style={{ height: '100%', width: '100%', overflow: 'auto' }}>
                             <AceEditor
                                 ref={"console"}
                                 mode={'json'}
                                 width={''}
                                 height={'100%'}
                                 theme={'tomorrow'}
-                                editorProps={{$blockScrolling: Infinity}}
+                                editorProps={{ $blockScrolling: Infinity }}
                                 value={this.state.result}
                                 showPrintMargin={false}
                                 focus={false}
@@ -100,7 +109,7 @@ export class QueryRunner extends React.Component<any, State> {
                                 highlightActiveLine={false}
                             />
                         </div>
-                    </SplitPane>
+                    </Splitter>
                 </div>
             </div>
         );
