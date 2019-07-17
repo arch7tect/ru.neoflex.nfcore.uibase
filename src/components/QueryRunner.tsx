@@ -68,7 +68,7 @@ export class QueryRunner extends React.Component<any, State> {
                     <Form.Item wrapperCol={{span: 2, push: 14}}>
                         <Tooltip placement="top" title={"Run"}>
                             <Button id="run" shape="circle" style={{border: 0}} onClick={this.run}>
-                                <IconFA name="question-circle"/>
+                                <IconFA name="eye"/>
                             </Button>
                         </Tooltip>
                     </Form.Item>

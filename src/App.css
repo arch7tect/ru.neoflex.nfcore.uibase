@@ -48,3 +48,7 @@
   top: initial !important;
   z-index: 5 !important;
 }
+
+.view-box{
+  padding: 20px;
+}
