@@ -5,9 +5,10 @@ import 'antd/dist/antd.css';
 //import {API} from './modules/resource'
 import {MetaBrowser} from "./components/MetaBrowser";
 import {ResourceEditor} from "./components/ResourceEditor"
-import {Link, Route, Switch, RouteComponentProps} from "react-router-dom";
+import {Link, Route, RouteComponentProps, Switch} from "react-router-dom";
 import {DataBrowser} from "./components/DataBrowser";
 import {QueryRunner} from "./components/QueryRunner";
+import {API} from "./modules/api";
 
 const { Content, Sider } = Layout;
 
@@ -16,31 +17,36 @@ export interface Props extends RouteComponentProps {
 }
 
 interface State {
-    
+    principal: any|undefined;
+    userName: string|undefined;
+    password: string|undefined;
 }
 
 export class EcoreApp extends React.Component<any, State> {
+    state = {principal: undefined, userName: undefined, password: undefined}
+
     componentDidMount(): void {
-        /*
-                let id: string = '80e3cf351c5fc42ca3db8be93906e33c';
-                Resource.instance().fetchEObject(id, 999).then(eObject => {
-                    console.log(eObject.eURI(), eObject.eResource().to());
-                    eObject.set('name', eObject.get('name') + '!');
-                    return Resource.instance().saveResource(eObject.eResource());
-                }).then(resource => {
-                    let eObject = resource.get('contents').first()
-                    console.log(eObject.eURI(), eObject.eResource().to());
-                })
-                let classURI = 'ru.neoflex.nfcore.base.auth#//User';
-                Resource.instance().findByClassURI(classURI).then((resources: Ecore.Resource[]) => {
-                    resources.forEach(resource=>console.log(resource.to()));
-                })
-         */
     }
 
     render() {
+        return (
+            <Layout>
+                {this.state.principal === undefined ?
+                    <Layout>
+                        {this.renderLogin()}
+                    </Layout>
+                    :
+                    <Layout>
+                        {this.renderDef()}
+                    </Layout>
+                }
+            </Layout>
+        );
+    }
+
+    renderDef() {
         let selectedKeys = ['metadata', 'data', 'query']
-            .filter(k=>this.props.location.pathname.split('/').includes(k))
+            .filter(k => this.props.location.pathname.split('/').includes(k))
         return (
             <Layout>
                 <Layout>
@@ -51,7 +57,7 @@ export class EcoreApp extends React.Component<any, State> {
                             <Menu.Item key={'query'}><Link to={`/query`}>Query</Link></Menu.Item>
                         </Menu>
                     </Sider>
-                    <Layout style={{ height: '100vh' }}>
+                    <Layout style={{height: '100vh'}}>
                         <Content>
                             <Switch>
                                 <Route path='/metadata' component={MetaBrowser}/>
@@ -63,6 +69,59 @@ export class EcoreApp extends React.Component<any, State> {
                     </Layout>
                 </Layout>
             </Layout>
-        );
+        )
     }
+
+    renderLogin() {
+        return (
+            <Layout>
+                <Content style={{height: '75vh', backgroundColor: '#ffffff'}}>
+                    <div className='form-div'>
+                        <br/>
+                        <Layout>
+                            <input
+                                autoFocus
+                                className="input-border"
+                                key="user"
+                                placeholder="User Name"
+                                onChange={e => {
+                                    this.setState({userName: e.target.value})
+                                }}
+                                onKeyUp={e => {
+                                    this.authenticateIfEnterPress(e)
+                                }}
+                            />
+                            <input
+                                className="input-border"
+                                key="pass"
+                                type="password"
+                                placeholder="password"
+                                onChange={e => {
+                                    this.setState({password: e.target.value})
+                                }}
+                                onKeyUp={e => {
+                                    this.authenticateIfEnterPress(e)
+                                }}
+                            />
+                            <button key="conbutton" className="custom-button"
+                                    onClick={this.authenticate}>Sign in
+                            </button>
+                        </Layout>
+                    </div>
+                </Content>
+            </Layout>
+        )
+    }
+
+    authenticate = () => {
+        API.instance().authenticate(this.state.userName, this.state.password)
+            .then(principal => {
+                this.setState({principal})
+            })
+    };
+
+    authenticateIfEnterPress(e:any) {
+        if (e.keyCode === 13) {
+            this.authenticate()
+        }}
 }

@@ -1,4 +1,5 @@
 import {Ecore} from "ecore";
+import _ from 'lodash';
 
 export class Error {
     error: string = "Unknown error";
@@ -65,9 +66,16 @@ export class API implements IErrorHandler {
         console.log(error)
     }
 
+    getOpts(opts?: RequestInit) {
+        return _.merge({
+            "credentials": "include",
+            headers: {'X-Requested-With': 'XMLHttpRequest'}
+        }, opts || {})
+    }
+
     fetchJson(input: RequestInfo, init?: RequestInit): Promise<any> {
         console.log("FETCH: " + input + ' ' + (init?JSON.stringify(init):''));
-        return this.fetch(input, init).then(response => response.json());
+        return this.fetch(input, this.getOpts(init)).then(response => response.json());
     }
 
     fetch(input: RequestInfo, init?: RequestInit): Promise<any> {
@@ -273,5 +281,13 @@ export class API implements IErrorHandler {
                 'Content-Type': 'application/json'
             }
         })
+    }
+
+    authenticate(login : any, password : any) {
+        return this.fetch('/system/user', {
+            method: "PUT",
+                headers: {
+                'Authorization': "Basic " + btoa(login + ":" + password)
+            }}).then(response => response.json());
     }
 }
