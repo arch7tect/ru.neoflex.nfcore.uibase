@@ -46,7 +46,7 @@ export class API implements IErrorHandler {
         return API._instance;
     }
 
-    init() {
+    init = () => {
         this.ePackagesPromise = undefined;
         this.fetchPackages();
     }
