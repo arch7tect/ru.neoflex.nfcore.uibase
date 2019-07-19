@@ -285,7 +285,7 @@ export class API implements IErrorHandler {
 
     authenticate(login : any, password : any) {
         return this.fetch('/system/user', {
-            method: "PUT",
+            method: "GET",
                 headers: {
                 'Authorization': "Basic " + btoa(login + ":" + password)
             }}).then(response => response.json());

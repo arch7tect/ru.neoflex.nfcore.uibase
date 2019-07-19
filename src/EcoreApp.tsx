@@ -8,7 +8,7 @@ import {ResourceEditor} from "./components/ResourceEditor"
 import {Link, Route, RouteComponentProps, Switch} from "react-router-dom";
 import {DataBrowser} from "./components/DataBrowser";
 import {QueryRunner} from "./components/QueryRunner";
-import {API} from "./modules/api";
+import {Login} from "./components/Login";
 
 const { Content, Sider } = Layout;
 
@@ -18,14 +18,13 @@ export interface Props extends RouteComponentProps {
 
 interface State {
     principal: any|undefined;
-    userName: string|undefined;
-    password: string|undefined;
 }
 
 export class EcoreApp extends React.Component<any, State> {
-    state = {principal: undefined, userName: undefined, password: undefined}
+    state = {principal: undefined}
 
-    componentDidMount(): void {
+    setPrincipal = (principal: any)=>{
+        this.setState({principal})
     }
 
     render() {
@@ -33,7 +32,7 @@ export class EcoreApp extends React.Component<any, State> {
             <Layout>
                 {this.state.principal === undefined ?
                     <Layout>
-                        {this.renderLogin()}
+                        <Login onLoginSucceed={this.setPrincipal}/>
                     </Layout>
                     :
                     <Layout>
@@ -41,7 +40,7 @@ export class EcoreApp extends React.Component<any, State> {
                     </Layout>
                 }
             </Layout>
-        );
+        )
     }
 
     renderDef() {
@@ -71,57 +70,4 @@ export class EcoreApp extends React.Component<any, State> {
             </Layout>
         )
     }
-
-    renderLogin() {
-        return (
-            <Layout>
-                <Content style={{height: '75vh', backgroundColor: '#ffffff'}}>
-                    <div className='form-div'>
-                        <br/>
-                        <Layout>
-                            <input
-                                autoFocus
-                                className="input-border"
-                                key="user"
-                                placeholder="User Name"
-                                onChange={e => {
-                                    this.setState({userName: e.target.value})
-                                }}
-                                onKeyUp={e => {
-                                    this.authenticateIfEnterPress(e)
-                                }}
-                            />
-                            <input
-                                className="input-border"
-                                key="pass"
-                                type="password"
-                                placeholder="password"
-                                onChange={e => {
-                                    this.setState({password: e.target.value})
-                                }}
-                                onKeyUp={e => {
-                                    this.authenticateIfEnterPress(e)
-                                }}
-                            />
-                            <button key="conbutton" className="custom-button"
-                                    onClick={this.authenticate}>Sign in
-                            </button>
-                        </Layout>
-                    </div>
-                </Content>
-            </Layout>
-        )
-    }
-
-    authenticate = () => {
-        API.instance().authenticate(this.state.userName, this.state.password)
-            .then(principal => {
-                this.setState({principal})
-            })
-    };
-
-    authenticateIfEnterPress(e:any) {
-        if (e.keyCode === 13) {
-            this.authenticate()
-        }}
 }
