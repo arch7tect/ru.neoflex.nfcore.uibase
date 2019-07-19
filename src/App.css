@@ -52,3 +52,43 @@
 .view-box{
   padding: 20px;
 }
+
+/*Design for img in page with login and password*/
+.logo {
+  width: 29vh;
+  height: 27vh;
+  margin-right: 300vh;
+}
+
+/*Design filds for login and password*/
+.input-border {
+  border: none;
+  border-bottom: 1.5px solid #bbb;
+  width: 35vh;
+  outline: none;
+  font-size: 19px;
+  color: #7e7e7e;
+  /*расстрояние между кнопками*/
+  margin-bottom: 3vh;
+}
+
+/*Form for login and password*/
+.form-div {
+  width: 20vh;
+  margin-left: 14vh;
+  margin-top: 5vh;
+}
+
+/*Button Sing in*/
+.custom-button {
+  border-radius: 6px;
+  background-color: #0253a9;
+  border: none;
+  color: white;
+  padding: 10px 50px;
+  text-align: center;
+  text-decoration: none;
+  display: inline-block;
+  font-size: 19px;
+  margin-top: 2vh;
+}
