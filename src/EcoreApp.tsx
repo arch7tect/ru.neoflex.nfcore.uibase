@@ -61,7 +61,7 @@ export class EcoreApp extends React.Component<any, State> {
                             <Switch>
                                 <Route path='/metadata' component={MetaBrowser}/>
                                 <Route exact={true} path='/data' component={DataBrowser}/>
-                                <Route path='/data/:id' component={ResourceEditor}/>
+                                <Route path='/data/:id/:ref' component={ResourceEditor}/>
                                 <Route path='/query' component={QueryRunner}/>
                             </Switch>
                         </Content>
