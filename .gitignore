@@ -2,6 +2,9 @@
 
 # dependencies
 /node_modules
+!/node_modules/m-react-splitters
+!/node_modules/@types/ecore
+package-lock.json
 /.pnp
 .pnp.js
 

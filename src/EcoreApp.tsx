@@ -2,7 +2,7 @@ import * as React from "react";
 import {Layout, Menu} from 'antd';
 import 'antd/dist/antd.css';
 //import {Ecore} from "ecore";
-//import {API} from './modules/resource'
+import {API} from './modules/api'
 import {MetaBrowser} from "./components/MetaBrowser";
 import {ResourceEditor} from "./components/ResourceEditor"
 import {Link, Route, RouteComponentProps, Switch} from "react-router-dom";
@@ -24,7 +24,7 @@ export class EcoreApp extends React.Component<any, State> {
     state = {principal: undefined}
 
     setPrincipal = (principal: any)=>{
-        this.setState({principal})
+        this.setState({principal}, API.instance().init)
     }
 
     render() {
