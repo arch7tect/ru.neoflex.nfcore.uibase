@@ -112,7 +112,7 @@ export class DataBrowser extends React.Component<any, State> {
         return (
             <Row>
                 <Col span={24}>
-                    <div>
+                    <div className="view-box">
                         <form>
                             <select autoFocus onChange={this.handleSelect} defaultValue={this.state.selectedType}>
                                 <option key="---" value="">---</option>
