@@ -1,5 +1,5 @@
 import * as React from "react";
-import {Layout, Menu} from 'antd';
+import {Col, Layout, Menu, Row} from 'antd';
 import 'antd/dist/antd.css';
 //import {Ecore} from "ecore";
 import {API} from './modules/api'
@@ -10,22 +10,31 @@ import {DataBrowser} from "./components/DataBrowser";
 import {QueryRunner} from "./components/QueryRunner";
 import {Login} from "./components/Login";
 
-const { Content, Sider } = Layout;
+const { Header, Content, Sider, Footer } = Layout;
 
 export interface Props extends RouteComponentProps {
     name: string;
 }
 
 interface State {
-    principal: any|undefined;
+    principal?: any;
 }
 
 export class EcoreApp extends React.Component<any, State> {
-    state = {principal: undefined}
+    state = {principal: undefined};
+
+    onRightMenu(e : any) {
+        if (e.key == "logout") {
+            API.instance().logout().then(() => {
+                this.setState({principal : undefined});
+
+            })
+        }
+    }
 
     setPrincipal = (principal: any)=>{
         this.setState({principal}, API.instance().init)
-    }
+    };
 
     render() {
         return (
@@ -44,10 +53,22 @@ export class EcoreApp extends React.Component<any, State> {
     }
 
     renderDef() {
-        let selectedKeys = ['metadata', 'data', 'query']
-            .filter(k => this.props.location.pathname.split('/').includes(k))
+        let selectedKeys = ['metadata', 'data', 'query', 'login']
+            .filter(k => this.props.location.pathname.split('/').includes(k));
+        let principal = this.state.principal as any;
         return (
             <Layout>
+                <Header style={{height: '4vh'}}>
+                    <Row type="flex" justify="space-between">
+                        <Col style={{marginLeft : '150vh'}} >
+                            <Menu mode="horizontal" theme="dark" onClick={(e) => this.onRightMenu(e)}>
+                                <Menu.SubMenu title={<span>{principal.name}</span>} style={{float: "right", height: '4vh'}}>
+                                    <Menu.Item key={'logout'}><Link to={`/logout`}>Logout</Link></Menu.Item>
+                                </Menu.SubMenu>
+                            </Menu>
+                        </Col>
+                    </Row>
+                </Header>
                 <Layout>
                     <Sider collapsible breakpoint="lg" collapsedWidth="0">
                         <Menu theme="dark" mode="inline" selectedKeys={selectedKeys}>
@@ -56,7 +77,7 @@ export class EcoreApp extends React.Component<any, State> {
                             <Menu.Item key={'query'}><Link to={`/query`}>Query</Link></Menu.Item>
                         </Menu>
                     </Sider>
-                    <Layout style={{height: '100vh'}}>
+                    <Layout style={{height: '96vh'}}>
                         <Content>
                             <Switch>
                                 <Route path='/metadata' component={MetaBrowser}/>

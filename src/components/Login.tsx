@@ -12,65 +12,77 @@ interface State {
     principal: any|undefined;
     userName: string|undefined;
     password: string|undefined;
+    waitMinute: boolean;
 }
 
 export class Login extends React.Component<Props, State> {
-    state = {principal: undefined, userName: undefined, password: undefined}
+    state = {principal: undefined, userName: undefined, password: undefined, waitMinute: true}
+
+    componentDidMount(): void {
+        this.authenticate().catch(()=>{
+            this.setState({waitMinute: false})
+        })
+    }
 
     render() {
-        return (
-            <div>
-                <Layout>
-                    <Header style={{ height: '30vh', backgroundColor: '#ffffff' }}>
-                        <Row type="flex"  justify="space-between">
-                            <Col span={16}>
-                            {/*<Button style={{height: '27vh', width: '29vh',backgroundColor: '#ffffff'}}>*/}
-                                <img src={logo2} className="logo"/>
-                            {/*</Button>*/}
-                            </Col>
-                            <Col>
-                                <Button type="dashed">
-                                    {/*Настроить переключение языков*/}
-                                    EN
-                                </Button>
-                            </Col>
-                        </Row>
-                    </Header>
+        if (this.state.waitMinute === true) {
+            return (
+                <div className="loader"></div>
+            )
+        }
+        else {
+            return (
+                <div>
+                    <Layout>
+                        <Header style={{height: '30vh', backgroundColor: '#ffffff'}}>
+                            <Row type="flex" justify="space-between">
+                                <Col span={1}>
+                                    <img src={logo2} className="logo"/>
+                                </Col>
+                                <Col>
+                                    <Button type="dashed">
+                                        {/*Настроить переключение языков*/}
+                                        EN
+                                    </Button>
+                                </Col>
+                            </Row>
+                        </Header>
                         <Content style={{height: '65vh', backgroundColor: '#ffffff'}}>
                             <div className='form-div'>
-                                    <input
-                                        autoFocus
-                                        className="input-border"
-                                        key="user"
-                                        placeholder="User Name"
-                                        onChange={e => {
-                                            this.setState({userName: e.target.value})
-                                        }}
-                                        onKeyUp={this.authenticateIfEnterPress}
-                                    />
-                                    <input
-                                        className="input-border"
-                                        key="pass"
-                                        type="password"
-                                        placeholder="password"
-                                        onChange={e => {
-                                            this.setState({password: e.target.value})
-                                        }}
-                                        onKeyUp={this.authenticateIfEnterPress}
-                                    />
-                                    <button key="conbutton" className="custom-button"
-                                            onClick={this.authenticate}>Sign in
-                                    </button>
+                                <input
+                                    autoFocus
+                                    className="input-border"
+                                    key="user"
+                                    placeholder="User Name"
+                                    onChange={e => {
+                                        this.setState({userName: e.target.value})
+                                    }}
+                                    onKeyUp={this.authenticateIfEnterPress}
+                                />
+                                <input
+                                    className="input-border"
+                                    key="pass"
+                                    type="password"
+                                    placeholder="password"
+                                    onChange={e => {
+                                        this.setState({password: e.target.value})
+                                    }}
+                                    onKeyUp={this.authenticateIfEnterPress}
+                                />
+                                <button key="conbutton" className="custom-button"
+                                        onClick={this.authenticate}>Sign in
+                                </button>
                             </div>
                         </Content>
-                    {/*<Footer style={{ height: '5vh', backgroundColor: '#ffdedf' }} />*/}
-                </Layout>
-            </div>
-        )
+                        {/*<Footer style={{ height: '5vh', backgroundColor: '#ffdedf' }} />*/}
+                    </Layout>
+                </div>
+            )
+        }
     }
 
     authenticate = () => {
-        API.instance().authenticate(this.state.userName, this.state.password)
+        return API.instance().authenticate(this.state.userName, this.state.password)
             .then((principal)=>{
                 this.props.onLoginSucceed(principal)
             })
