@@ -58,18 +58,23 @@ export class EcoreApp extends React.Component<any, State> {
         let principal = this.state.principal as any;
         return (
             <Layout>
-                <Header style={{height: '4vh'}}>
-                    <Row type="flex" justify="space-between">
-                        <Col style={{marginLeft : '150vh'}} >
-                            <Menu mode="horizontal" theme="dark" onClick={(e) => this.onRightMenu(e)}>
-                                <Menu.SubMenu title={<span>{principal.name}</span>} style={{float: "right", height: '4vh'}}>
-                                    <Menu.Item key={'logout'}>Logout</Menu.Item>
-                                </Menu.SubMenu>
-                            </Menu>
-                        </Col>
-                    </Row>
+
+
+                <Header style={{height: '100%', padding: "0px"}}>
+                    {/*<Row>*/}
+                    {/*    <Col>*/}
+                    <Menu mode="horizontal" theme="dark" onClick={(e) => this.onRightMenu(e)} style={{float: "right", height: '40px'}}>
+                            {/*<Menu mode="horizontal" theme="dark" onClick={(e) => this.onRightMenu(e)} style={{float: "right", height: '40px'}}>*/}
+                            <Menu.SubMenu title={<span>{principal.name}</span>}>
+                                <Menu.Item key={'logout'}>Logout</Menu.Item>
+                            </Menu.SubMenu>
+                    </Menu>
+                        {/*</Col>*/}
+                    {/*</Row>*/}
                 </Header>
-                <Layout>
+
+
+                <Layout style={{height: '95.9vh'}}>
                     <Sider collapsible breakpoint="lg" collapsedWidth="0">
                         <Menu theme="dark" mode="inline" selectedKeys={selectedKeys}>
                             <Menu.Item key={'metadata'}><Link to={`/metadata`}>Metadata</Link></Menu.Item>
@@ -77,7 +82,7 @@ export class EcoreApp extends React.Component<any, State> {
                             <Menu.Item key={'query'}><Link to={`/query`}>Query</Link></Menu.Item>
                         </Menu>
                     </Sider>
-                    <Layout style={{height: '96vh'}}>
+                    <Layout>
                         <Content>
                             <Switch>
                                 <Route path='/metadata' component={MetaBrowser}/>
