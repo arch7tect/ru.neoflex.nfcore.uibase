@@ -63,7 +63,7 @@ export class EcoreApp extends React.Component<any, State> {
                         <Col style={{marginLeft : '150vh'}} >
                             <Menu mode="horizontal" theme="dark" onClick={(e) => this.onRightMenu(e)}>
                                 <Menu.SubMenu title={<span>{principal.name}</span>} style={{float: "right", height: '4vh'}}>
-                                    <Menu.Item key={'logout'}><Link to={`/logout`}>Logout</Link></Menu.Item>
+                                    <Menu.Item key={'logout'}>Logout</Menu.Item>
                                 </Menu.SubMenu>
                             </Menu>
                         </Col>
