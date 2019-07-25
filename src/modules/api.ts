@@ -289,17 +289,15 @@ export class API implements IErrorHandler {
 
     authenticate(login : any, password : any) {
         if (login === undefined) {
-            return this.fetch('/system/user', {
-                "credentials": "include",
-                headers: {'X-Requested-With': 'XMLHttpRequest'}})
+            return this.fetch('/system/user', this.getOpts({}))
                 .then(response => response.json())
         } else {
-            return this.fetch('/system/user', {
+            return this.fetch('/system/user', this.getOpts({
                 method: "GET",
                 headers: {
                     'Authorization': "Basic " + btoa(login + ":" + password)
                 }
-            }).then(response => response.json());
+            })).then(response => response.json());
         }
     }
 
