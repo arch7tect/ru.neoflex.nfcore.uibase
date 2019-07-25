@@ -5,12 +5,14 @@ import {API} from "../modules/api";
 //import SplitPane from 'react-split-pane';
 //import Pane from 'react-split-pane/lib/Pane';
 import Splitter from 'm-react-splitters'
-//import update from 'immutability-helper';
+import update from 'immutability-helper';
+//import { any } from "prop-types";
 //import _filter from 'lodash/filter'
 //import _map from 'lodash/map'
+import EditableTextArea from './EditableTextArea'
 
 interface ITargetObject {
-    [key: string]: string;
+    [key: string]: any;
 }
 
 export interface Props {
@@ -21,7 +23,8 @@ interface State {
     resourceJSON: Object,
     ePackages: Ecore.EPackage[],
     selectedNodeName: string|undefined,
-    tableData: Array<any>
+    tableData: Array<any>,
+    targetObject: Object
 }
 
 export class ResourceEditor extends React.Component<any, State> {
@@ -38,7 +41,8 @@ export class ResourceEditor extends React.Component<any, State> {
         resourceJSON: {},
         ePackages: [],
         selectedNodeName: undefined,
-        tableData: []
+        tableData: [],
+        targetObject: {}
     }
 
     getPackages(): void{
@@ -49,13 +53,57 @@ export class ResourceEditor extends React.Component<any, State> {
 
     getResource(): void {
         API.instance().fetchEObject(`${this.props.match.params.id}?ref=${this.props.match.params.ref}`).then(resource=>{
-            this.setState({ resource: resource, resourceJSON: resource.eResource().to() })
+            this.setState({ 
+                resource: resource, 
+                resourceJSON: this.nestUpdaters(resource.eResource().to(), null) 
+            })
         })
     }
 
-    updateProperty(property:string, value:any){
-        //const updated = update(this.state.resourceJSON,)
-        //this.setState({ resourceJSON: updated })
+    /**
+     * Creates updaters for all levels of object, including for objects in arrays.
+     */
+    nestUpdaters(json:any, parentObject:any = null, property?:String): Object {
+
+        const createUpdater = (data: Object, init_idx?:Number) => {
+            return function (newValues: Object, indexForParentUpdater?: any, targetArray?:any) {
+                    const currentObject = data
+                    const idx:any = init_idx
+                    const prop:any = property
+                    const parent = parentObject
+                    let updatedData
+                    if(targetArray){
+                        updatedData = update(currentObject as any, { [targetArray]: { [indexForParentUpdater]: { $merge: newValues } } }) 
+                    }else{
+                        updatedData = update(currentObject, {$merge: newValues})
+                    }
+                    return parent && parent.updater ? parent.updater(updatedData, idx, prop) : updatedData
+                }
+        }
+
+        const walkThroughArray = (array:Array<any>) =>{
+            array.forEach((obj, index) => {
+                obj.updater = createUpdater(obj, index)
+                walkThroughObject(obj)
+            })
+        }
+
+        const walkThroughObject = (obj:any) => {
+            //cause if we go from walkThroughArray we'll rewrite updater, so we have to check if(!obj.updater)
+            if(!obj.updater) obj.updater = createUpdater(obj)
+
+            Object.entries(obj).forEach(([key, value]) => {
+                if (Array.isArray(value)) this.nestUpdaters(value, obj, key)
+            })
+        }
+
+        if(Array.isArray(json)){
+            walkThroughArray(json)
+        }else{
+            walkThroughObject(json)
+        }
+
+        return json
     }
 
     createPropertyTable() {
@@ -63,7 +111,6 @@ export class ResourceEditor extends React.Component<any, State> {
             <Table bordered 
                 size="small"
                 pagination={false}
-                //components={this.components} 
                 columns={[
                     {
                         title: 'Property',
@@ -80,6 +127,15 @@ export class ResourceEditor extends React.Component<any, State> {
     }
 
     createTree() {
+
+        function generateNodes(resource:Ecore.EObject):Array<any>{
+            return resource.eContents().map((res,idx) => 
+                <Tree.TreeNode key={res._id} eClass={res} icon={<Icon type="block"/>} title={res.eClass.get('name')}>
+                    {res.eContents().length > 0 && generateNodes(res)}
+                </Tree.TreeNode>
+            )
+        }
+
         return (
             <Tree
                 showIcon
@@ -88,8 +144,7 @@ export class ResourceEditor extends React.Component<any, State> {
                 onSelect={this.onTreeSelect}
             >
                 <Tree.TreeNode style={{fontWeight: '600'}} icon={<Icon type="cluster" />} title={this.state.resource.eClass.get('name')} key={this.state.resource._id}>
-                    {this.state.resource.eContents().map((res,idx) => 
-                        <Tree.TreeNode key={res._id} eClass={res} icon={<Icon type="block"/>} title={res.eClass.get('name')} />)}
+                    {generateNodes(this.state.resource)}
                 </Tree.TreeNode>
             </Tree>
         )
@@ -97,10 +152,23 @@ export class ResourceEditor extends React.Component<any, State> {
 
     findObjectById(data:any, id:String):any{
 
-        function walkThroughArray(array:Array<any>): any{
+        const walkThroughArray = (array:Array<any>): any =>{
             for(var el of array) {
-                if (el._id && el._id === id) return el
+                if (el._id && el._id === id) {
+                    return el
+                }else{
+                    const result = this.findObjectById(el, id)
+                    if(result) return result
+                }
             }
+        }
+
+        const walkThroughObject = (obj:Object):any => {
+            let result
+            Object.entries(obj).forEach(([key, value]) => {
+                if (Array.isArray(value)) result = this.findObjectById(value, id)
+            })
+            if(result) return result
         }
 
         if(data._id === id) return data
@@ -108,47 +176,53 @@ export class ResourceEditor extends React.Component<any, State> {
         if(Array.isArray(data)){
             return walkThroughArray(data)
         }else{
-            let result
-            Object.entries(data).forEach(([key, value]) => {
-                if (Array.isArray(value)) result = this.findObjectById(value, id)
-            })
-            return result
+            return walkThroughObject(data)
         }
     }
 
     onTreeSelect = (selectedKeys:Array<String>, e:any) => {
         if(selectedKeys[0]){
             const targetObject = this.findObjectById(this.state.resourceJSON, selectedKeys[0])
-            this.setState({ tableData: this.prepareTableData(this.state.resourceJSON, targetObject, this.state.resource) })
+            this.setState({ 
+                tableData: this.prepareTableData(this.state.resourceJSON, targetObject, this.state.resource),
+                targetObject: targetObject
+            })
         }
     }
 
     prepareTableData(data:Object, targetObject:ITargetObject ,resource:Ecore.EObject): Array<any> {
 
-        //const targetObject = this.findObjectById(this.state.resourceJSON, selectedKeys[0])
-        const featureList = resource.eContainer.getEObject(targetObject._id).eClass.get('eStructuralFeatures').array()
-        const preparedData = featureList.map((feature:Ecore.EObject)=>({property: feature.get('name'), value: Array.isArray(targetObject[feature.get('name')]) ? JSON.stringify(targetObject[feature.get('name')]) : targetObject[feature.get('name')]}))
-
-
-        /*
-        const exludedKeys: Array<String> = ["_id", "eClass"]
-        const tableData:Array<any> = []
-        function isContained(eFeatureName:string):Boolean {
-            const wantedStructuralFeature = resource.eClass
-                .get('eStructuralFeatures')
-                .array()
-                .find((feature:Ecore.EStructuralFeature) => feature.get('name') === eFeatureName)
-            const contaiment = Boolean(wantedStructuralFeature.get('containment')) === true
-            return contaiment
+        const prepareValue = (key:string, value:any):any => {
+            if(Array.isArray(value)){
+                const elements = value.map((el,idx) => <React.Fragment key={idx}>{JSON.stringify(el)}<br/></React.Fragment>)
+                const component = <React.Fragment>
+                    {elements}
+                    <button>...</button>    
+                </React.Fragment>
+                return component
+            }else{
+                return <EditableTextArea
+                    editedProperty={key} 
+                    value={value} 
+                    onChange={(newValue:Object)=>
+                        this.setState({ resourceJSON: targetObject.updater(newValue) })} 
+                />
+            }
         }
 
-        Object.entries(data).forEach(([key, value]) => {
-            if(!exludedKeys.includes(key)){
-                isContained(key) && tableData.push({ property: key, value: Array.isArray(value) ? JSON.stringify(value) : value })
-            }
-        })
-        */
+        //const targetObject = this.findObjectById(this.state.resourceJSON, selectedKeys[0])
+        const featureList = resource.eContainer.getEObject(targetObject._id).eClass.get('eStructuralFeatures').array()
+        const preparedData = featureList.map((feature:Ecore.EObject, idx:Number)=>({property: feature.get('name'), value: prepareValue(feature.get('name'), targetObject[feature.get('name')]), key: feature.get('name')+idx }))
+
         return preparedData
+    }
+
+    componentDidUpdate(prevProps: Props, prevState: State) {
+        //if((this.state.resourceJSON !== prevState.resourceJSON) && 
+            //Object.keys(this.state.resource).length > 0 &&
+            //Object.keys(this.state.targetObject){
+            //this.prepareTableData(this.state.resourceJSON, this.state.targetObject, this.state.resource)
+        //}
     }
 
     componentDidMount(): void {
