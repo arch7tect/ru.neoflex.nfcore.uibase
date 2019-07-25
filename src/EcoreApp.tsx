@@ -5,7 +5,7 @@ import 'antd/dist/antd.css';
 import {API} from './modules/api'
 import {MetaBrowser} from "./components/MetaBrowser";
 import {ResourceEditor} from "./components/ResourceEditor"
-import {Link, Route, RouteComponentProps, Switch} from "react-router-dom";
+import {Link, Redirect, Route, RouteComponentProps, Switch} from "react-router-dom";
 import {DataBrowser} from "./components/DataBrowser";
 import {QueryRunner} from "./components/QueryRunner";
 import {Login} from "./components/Login";
@@ -41,7 +41,6 @@ export class EcoreApp extends React.Component<any, State> {
 
     setPrincipal = (principal: any)=>{
         this.setState({principal}, API.instance().init)
-        this.props.history.push('/app');
     };
 
     render() {
@@ -63,11 +62,10 @@ export class EcoreApp extends React.Component<any, State> {
     renderDev() {
         let principal = this.state.principal as any;
         return (
-            <Layout>
-
-                <Header style={{height: '100%', padding: "0px"}}>
-                    <Menu mode="horizontal" theme="dark" onClick={(e) => this.onRightMenu(e)} style={{float: "right"}}>
-                        <Menu.SubMenu title={<span>{principal.name}</span>}>
+            <Layout style={{height: '100vh'}}>
+                <Header style={{height: '40px', padding: "0px"}}>
+                    <Menu theme="dark" mode="horizontal" onClick={(e) => this.onRightMenu(e)} style={{float: "right", height: '100%'}}>
+                        <Menu.SubMenu title={<span> {principal.name}</span>} style={{float: "right", height: '100%', top: '-3px'}}>
                             <Menu.Item key={'logout'}>Logout</Menu.Item>
                             <Menu.Item key={'developer'}>Developer</Menu.Item>
                             <Menu.Item key={'app'}>App</Menu.Item>
@@ -76,8 +74,9 @@ export class EcoreApp extends React.Component<any, State> {
                 </Header>
 
                 <Switch>
+                    <Redirect from={'/'} exact={true} to={'/app'}/>
                     <Route path='/app' component={this.renderStartPage}/>
-                    <Route path='/settings' component={this.renderSettings} />
+                    <Route path='/settings' component={this.renderSettings}/>
                 </Switch>
             </Layout>
         )
@@ -87,7 +86,7 @@ export class EcoreApp extends React.Component<any, State> {
         let selectedKeys = ['metadata', 'data', 'query']
             .filter(k => this.props.location.pathname.split('/').includes(k));
         return (
-            <Layout style={{height: '95.25vh'}}>
+            <Layout>
                 <Sider collapsible breakpoint="lg" collapsedWidth="0">
                     <Menu theme="dark" mode="inline" selectedKeys={selectedKeys}>
                         <Menu.Item key={'metadata'}><Link to={`/settings/metadata`}>Metadata</Link></Menu.Item>
