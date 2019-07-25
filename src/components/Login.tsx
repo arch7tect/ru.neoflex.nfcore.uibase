@@ -1,7 +1,7 @@
 import * as React from "react";
 import { Layout, Row, Col,Button } from 'antd'
 import {API} from "../modules/api";
-import logo2 from '../logo2.png';
+import logo from '../logo.png';
 const { Header, Content } = Layout;
 
 export interface Props {
@@ -37,7 +37,7 @@ export class Login extends React.Component<Props, State> {
                         <Header style={{height: '30vh', backgroundColor: '#ffffff'}}>
                             <Row type="flex" justify="space-between">
                                 <Col span={1}>
-                                    <img alt="The great and terrible" src={logo2} className="logo"/>
+                                    <img alt="The great and terrible" src={logo} className="logo"/>
                                 </Col>
                                 <Col>
                                     <Button type="dashed">
@@ -74,7 +74,6 @@ export class Login extends React.Component<Props, State> {
                                 </button>
                             </div>
                         </Content>
-                        {/*<Footer style={{ height: '5vh', backgroundColor: '#ffdedf' }} />*/}
                     </Layout>
                 </div>
             )

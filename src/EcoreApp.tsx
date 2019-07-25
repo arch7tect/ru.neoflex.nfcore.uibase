@@ -9,6 +9,7 @@ import {Link, Route, RouteComponentProps, Switch} from "react-router-dom";
 import {DataBrowser} from "./components/DataBrowser";
 import {QueryRunner} from "./components/QueryRunner";
 import {Login} from "./components/Login";
+import logo from "./logo.png";
 
 const { Header, Content, Sider } = Layout;
 
@@ -30,13 +31,17 @@ export class EcoreApp extends React.Component<any, State> {
             })
             this.props.history.push('')
         }
-        else if (e.key == "developer") {
+        else if (e.key === "developer") {
             this.props.history.push('/settings/data');
+        }
+        else if (e.key === "app") {
+            this.props.history.push('/app');
         }
     }
 
     setPrincipal = (principal: any)=>{
         this.setState({principal}, API.instance().init)
+        this.props.history.push('/app');
     };
 
     render() {
@@ -65,6 +70,7 @@ export class EcoreApp extends React.Component<any, State> {
                         <Menu.SubMenu title={<span>{principal.name}</span>}>
                             <Menu.Item key={'logout'}>Logout</Menu.Item>
                             <Menu.Item key={'developer'}>Developer</Menu.Item>
+                            <Menu.Item key={'app'}>App</Menu.Item>
                         </Menu.SubMenu>
                     </Menu>
                 </Header>
@@ -107,6 +113,7 @@ export class EcoreApp extends React.Component<any, State> {
         return (
             <Layout>
                 App
+                <img alt="The great and terrible" src={logo} className="logo"/>
             </Layout>
         )
     }
