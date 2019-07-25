@@ -37,7 +37,7 @@ export class Login extends React.Component<Props, State> {
                         <Header style={{height: '30vh', backgroundColor: '#ffffff'}}>
                             <Row type="flex" justify="space-between">
                                 <Col span={1}>
-                                    <img src={logo2} className="logo"/>
+                                    <img alt="The great and terrible" src={logo2} className="logo"/>
                                 </Col>
                                 <Col>
                                     <Button type="dashed">

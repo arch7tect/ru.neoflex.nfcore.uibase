@@ -10,7 +10,7 @@ import {DataBrowser} from "./components/DataBrowser";
 import {QueryRunner} from "./components/QueryRunner";
 import {Login} from "./components/Login";
 
-const { Header, Content, Sider, Footer } = Layout;
+const { Header, Content, Sider } = Layout;
 
 export interface Props extends RouteComponentProps {
     name: string;
@@ -24,7 +24,7 @@ export class EcoreApp extends React.Component<any, State> {
     state = {principal: undefined};
 
     onRightMenu(e : any) {
-        if (e.key == "logout") {
+        if (e.key === "logout") {
             API.instance().logout().then(() => {
                 this.setState({principal : undefined});
             })
