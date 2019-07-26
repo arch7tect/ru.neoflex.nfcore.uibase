@@ -1,7 +1,7 @@
 import * as React from "react";
-import { Tree, Icon, Table } from 'antd';
+import { Tree, Icon, Table, Modal, Button } from 'antd';
 import { Ecore } from "ecore";
-import {API} from "../modules/api";
+import { API } from "../modules/api";
 //import SplitPane from 'react-split-pane';
 //import Pane from 'react-split-pane/lib/Pane';
 import Splitter from 'm-react-splitters'
@@ -22,9 +22,11 @@ interface State {
     resource: Ecore.EObject,
     resourceJSON: Object,
     ePackages: Ecore.EPackage[],
-    selectedNodeName: string|undefined,
+    selectedNodeName: string | undefined,
     tableData: Array<any>,
-    targetObject: Object
+    targetObject: Object,
+    selectedKey: String,
+    modalVisible: Boolean
 }
 
 export class ResourceEditor extends React.Component<any, State> {
@@ -42,20 +44,22 @@ export class ResourceEditor extends React.Component<any, State> {
         ePackages: [],
         selectedNodeName: undefined,
         tableData: [],
-        targetObject: {}
+        targetObject: {},
+        selectedKey: "",
+        modalVisible: false
     }
 
-    getPackages(): void{
-        API.instance().fetchPackages().then(packages=>{
-            this.setState({ePackages: packages})
+    getPackages(): void {
+        API.instance().fetchPackages().then(packages => {
+            this.setState({ ePackages: packages })
         })
     }
 
     getResource(): void {
-        API.instance().fetchEObject(`${this.props.match.params.id}?ref=${this.props.match.params.ref}`).then(resource=>{
-            this.setState({ 
-                resource: resource, 
-                resourceJSON: this.nestUpdaters(resource.eResource().to(), null) 
+        API.instance().fetchEObject(`${this.props.match.params.id}?ref=${this.props.match.params.ref}`).then(resource => {
+            this.setState({
+                resource: resource,
+                resourceJSON: this.nestUpdaters(resource.eResource().to(), null)
             })
         })
     }
@@ -63,43 +67,42 @@ export class ResourceEditor extends React.Component<any, State> {
     /**
      * Creates updaters for all levels of object, including for objects in arrays.
      */
-    nestUpdaters(json:any, parentObject:any = null, property?:String): Object {
+    nestUpdaters(json: any, parentObject: any = null, property?: String): Object {
 
-        const createUpdater = (data: Object, init_idx?:Number) => {
-            return function (newValues: Object, indexForParentUpdater?: any, targetArray?:any) {
-                    const currentObject = data
-                    const idx:any = init_idx
-                    const prop:any = property
-                    const parent = parentObject
-                    let updatedData
-                    if(targetArray){
-                        updatedData = update(currentObject as any, { [targetArray]: { [indexForParentUpdater]: { $merge: newValues } } }) 
-                    }else{
-                        updatedData = update(currentObject, {$merge: newValues})
-                    }
-                    return parent && parent.updater ? parent.updater(updatedData, idx, prop) : updatedData
+        const createUpdater = (data: Object, init_idx?: Number) => {
+            return function updater(newValues: Object, indexForParentUpdater?: any, targetArray?: any) {
+                const currentObject = data
+                const idx: any = init_idx
+                const prop: any = property
+                const parent = parentObject
+                let updatedData
+                if (targetArray) {
+                    updatedData = update(currentObject as any, { [targetArray]: { [indexForParentUpdater]: { $merge: newValues } } })
+                } else {
+                    updatedData = update(currentObject, { $merge: newValues })
                 }
+                return parent && parent.updater ? parent.updater(updatedData, idx, prop) : updatedData
+            }
         }
 
-        const walkThroughArray = (array:Array<any>) =>{
+        const walkThroughArray = (array: Array<any>) => {
             array.forEach((obj, index) => {
-                obj.updater = createUpdater(obj, index)
                 walkThroughObject(obj)
+                //rewrite existing updater created during walkThroughObject, cause it doesn't contain index
+                obj.updater = createUpdater(obj, index)
             })
         }
 
-        const walkThroughObject = (obj:any) => {
-            //cause if we go from walkThroughArray we'll rewrite updater, so we have to check if(!obj.updater)
-            if(!obj.updater) obj.updater = createUpdater(obj)
-
+        const walkThroughObject = (obj: any) => {
+            obj.updater = createUpdater(obj)
             Object.entries(obj).forEach(([key, value]) => {
                 if (Array.isArray(value)) this.nestUpdaters(value, obj, key)
             })
         }
 
-        if(Array.isArray(json)){
+        if (Array.isArray(json)) {
             walkThroughArray(json)
-        }else{
+        } else {
             walkThroughObject(json)
         }
 
@@ -108,7 +111,7 @@ export class ResourceEditor extends React.Component<any, State> {
 
     createPropertyTable() {
         return (
-            <Table bordered 
+            <Table bordered
                 size="small"
                 pagination={false}
                 columns={[
@@ -121,16 +124,16 @@ export class ResourceEditor extends React.Component<any, State> {
                         title: 'Value',
                         dataIndex: 'value'
                     },]}
-                dataSource={this.state.tableData} 
+                dataSource={this.state.tableData}
             />
         )
     }
 
     createTree() {
 
-        function generateNodes(resource:Ecore.EObject):Array<any>{
-            return resource.eContents().map((res,idx) => 
-                <Tree.TreeNode key={res._id} eClass={res} icon={<Icon type="block"/>} title={res.eClass.get('name')}>
+        function generateNodes(resource: Ecore.EObject): Array<any> {
+            return resource.eContents().map((res, idx) =>
+                <Tree.TreeNode key={res._id} eClass={res} icon={<Icon type="block" />} title={res.eClass.get('name')}>
                     {res.eContents().length > 0 && generateNodes(res)}
                 </Tree.TreeNode>
             )
@@ -143,86 +146,100 @@ export class ResourceEditor extends React.Component<any, State> {
                 switcherIcon={<Icon type="down" />}
                 onSelect={this.onTreeSelect}
             >
-                <Tree.TreeNode style={{fontWeight: '600'}} icon={<Icon type="cluster" />} title={this.state.resource.eClass.get('name')} key={this.state.resource._id}>
+                <Tree.TreeNode style={{ fontWeight: '600' }} icon={<Icon type="cluster" />} title={this.state.resource.eClass.get('name')} key={this.state.resource._id}>
                     {generateNodes(this.state.resource)}
                 </Tree.TreeNode>
             </Tree>
         )
     }
 
-    findObjectById(data:any, id:String):any{
+    findObjectById(data: any, id: String): any {
 
-        const walkThroughArray = (array:Array<any>): any =>{
-            for(var el of array) {
+        const walkThroughArray = (array: Array<any>): any => {
+            for (var el of array) {
                 if (el._id && el._id === id) {
                     return el
-                }else{
+                } else {
                     const result = this.findObjectById(el, id)
-                    if(result) return result
+                    if (result) return result
                 }
             }
         }
 
-        const walkThroughObject = (obj:Object):any => {
+        const walkThroughObject = (obj: Object): any => {
             let result
             Object.entries(obj).forEach(([key, value]) => {
                 if (Array.isArray(value)) result = this.findObjectById(value, id)
             })
-            if(result) return result
+            if (result) return result
         }
 
-        if(data._id === id) return data
+        if (data._id === id) return data
 
-        if(Array.isArray(data)){
+        if (Array.isArray(data)) {
             return walkThroughArray(data)
-        }else{
+        } else {
             return walkThroughObject(data)
         }
     }
 
-    onTreeSelect = (selectedKeys:Array<String>, e:any) => {
-        if(selectedKeys[0]){
+    onTreeSelect = (selectedKeys: Array<String>, e: any) => {
+        if (selectedKeys[0]) {
             const targetObject = this.findObjectById(this.state.resourceJSON, selectedKeys[0])
-            this.setState({ 
-                tableData: this.prepareTableData(this.state.resourceJSON, targetObject, this.state.resource),
-                targetObject: targetObject
+            this.setState({
+                tableData: this.prepareTableData(targetObject, this.state.resource),
+                targetObject: targetObject,
+                selectedKey: selectedKeys[0]
             })
         }
     }
 
-    prepareTableData(data:Object, targetObject:ITargetObject ,resource:Ecore.EObject): Array<any> {
+    prepareTableData(targetObject: ITargetObject, resource: Ecore.EObject): Array<any> {
 
-        const prepareValue = (key:string, value:any):any => {
-            if(Array.isArray(value)){
-                const elements = value.map((el,idx) => <React.Fragment key={idx}>{JSON.stringify(el)}<br/></React.Fragment>)
+        const prepareValue = (key: string, value: any): any => {
+            if (Array.isArray(value)) {
+                const elements = value.map((el, idx) => <React.Fragment key={idx}>{JSON.stringify(el)}<br /></React.Fragment>)
                 const component = <React.Fragment>
                     {elements}
-                    <button>...</button>    
+                    <Button onClick={()=>this.setState({ modalVisible: true })}>...</Button>
                 </React.Fragment>
                 return component
-            }else{
+            } else {
                 return <EditableTextArea
-                    editedProperty={key} 
-                    value={value} 
-                    onChange={(newValue:Object)=>
-                        this.setState({ resourceJSON: targetObject.updater(newValue) })} 
+                    editedProperty={key}
+                    value={value}
+                    onChange={(newValue: Object) => {
+                        const updatedJSON = targetObject.updater(newValue)
+                        const nestedJSON = this.nestUpdaters(updatedJSON, null)
+                        const object = this.findObjectById(nestedJSON, targetObject._id)
+                        const preparedData = this.prepareTableData(object, this.state.resource)
+                        this.setState({ resourceJSON: nestedJSON, tableData: preparedData })
+                    }}
                 />
             }
         }
 
-        //const targetObject = this.findObjectById(this.state.resourceJSON, selectedKeys[0])
         const featureList = resource.eContainer.getEObject(targetObject._id).eClass.get('eStructuralFeatures').array()
-        const preparedData = featureList.map((feature:Ecore.EObject, idx:Number)=>({property: feature.get('name'), value: prepareValue(feature.get('name'), targetObject[feature.get('name')]), key: feature.get('name')+idx }))
+        const preparedData = featureList.map((feature: Ecore.EObject, idx: Number) => ({ property: feature.get('name'), value: prepareValue(feature.get('name'), targetObject[feature.get('name')]), key: feature.get('name') + idx }))
 
         return preparedData
     }
 
+    handleModalOk = () => {
+        this.setState({ modalVisible: false })
+    }
+
+    handleModalCancel = () => {
+        this.setState({ modalVisible: false })
+    }
+
     componentDidUpdate(prevProps: Props, prevState: State) {
-        //if((this.state.resourceJSON !== prevState.resourceJSON) && 
-            //Object.keys(this.state.resource).length > 0 &&
-            //Object.keys(this.state.targetObject){
-            //this.prepareTableData(this.state.resourceJSON, this.state.targetObject, this.state.resource)
-        //}
+        /*if(this.state.targetObject !== prevState.targetObject && this.state.selectedKey !== prevState.selectedKey){
+            this.nestUpdaters(this.state.resourceJSON, null)
+            this.setState({
+                tableData: this.prepareTableData(this.state.resourceJSON, this.state.targetObject, this.state.resource)
+            })
+        }*/
     }
 
     componentDidMount(): void {
@@ -232,8 +249,8 @@ export class ResourceEditor extends React.Component<any, State> {
 
     render() {
         return (
-                <div style={{display: 'flex', flexFlow: 'column', height: '100%'}}>
-                    <div style={{ flexGrow: 1 }}>
+            <div style={{ display: 'flex', flexFlow: 'column', height: '100%' }}>
+                <div style={{ flexGrow: 1 }}>
                     <Splitter
                         ref={this.splitterRef}
                         position="horizontal"
@@ -242,20 +259,30 @@ export class ResourceEditor extends React.Component<any, State> {
                         primaryPaneHeight={localStorage.getItem('resource_splitter_pos') || "400px"}
                         dispatchResize={true}
                         postPoned={false}
-                        onDragFinished={()=>{
-                            const size:string = this.splitterRef.current!.panePrimary.props.style.height
+                        onDragFinished={() => {
+                            const size: string = this.splitterRef.current!.panePrimary.props.style.height
                             localStorage.setItem('resource_splitter_pos', size)
                         }}
                     >
-                            <div className="view-box" style={{ height: '100%', width: '100%', overflow: 'auto' }}>
-                                {this.state.resource.eClass && this.createTree()}
-                            </div>
-                            <div style={{ height: '100%', width: '100%', overflow: 'auto', backgroundColor: '#fff' }}>
-                                {this.createPropertyTable()}
-                            </div>
-                        </Splitter>
-                    </div>
+                        <div className="view-box" style={{ height: '100%', width: '100%', overflow: 'auto' }}>
+                            {this.state.resource.eClass && this.createTree()}
+                        </div>
+                        <div style={{ height: '100%', width: '100%', overflow: 'auto', backgroundColor: '#fff' }}>
+                            {this.createPropertyTable()}
+                        </div>
+                    </Splitter>
                 </div>
+                <Modal
+                    title="Add resource"
+                    visible={this.state.modalVisible}
+                    onOk={this.handleModalOk}
+                    onCancel={this.handleModalCancel}
+                >
+                    <p>Some contents...</p>
+                    <p>Some contents...</p>
+                    <p>Some contents...</p>
+                </Modal>
+            </div>
         );
     }
 }
