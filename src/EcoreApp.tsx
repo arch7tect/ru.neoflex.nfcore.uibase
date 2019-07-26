@@ -6,10 +6,10 @@ import {API} from './modules/api'
 import {MetaBrowser} from "./components/MetaBrowser";
 import {ResourceEditor} from "./components/ResourceEditor"
 import {Link, Redirect, Route, RouteComponentProps, Switch} from "react-router-dom";
-import {DataBrowser} from "./components/DataBrowser";
 import {QueryRunner} from "./components/QueryRunner";
 import {Login} from "./components/Login";
 import logo from "./logo.png";
+import {DataBrowser} from "./components/DataBrowser";
 
 const { Header, Content, Sider } = Layout;
 
