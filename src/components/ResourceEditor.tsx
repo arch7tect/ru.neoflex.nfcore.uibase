@@ -26,7 +26,9 @@ interface State {
     tableData: Array<any>,
     targetObject: Object,
     selectedKey: String,
-    modalVisible: Boolean
+    modalVisible: Boolean,
+    rightClickMenuVisible: Boolean,
+    rightMenuPosition: Object 
 }
 
 export class ResourceEditor extends React.Component<any, State> {
@@ -46,7 +48,9 @@ export class ResourceEditor extends React.Component<any, State> {
         tableData: [],
         targetObject: {},
         selectedKey: "",
-        modalVisible: false
+        modalVisible: false,
+        rightClickMenuVisible: false,
+        rightMenuPosition: {x:100,y:100}
     }
 
     getPackages(): void {
@@ -88,7 +92,7 @@ export class ResourceEditor extends React.Component<any, State> {
         const walkThroughArray = (array: Array<any>) => {
             array.forEach((obj, index) => {
                 walkThroughObject(obj)
-                //rewrite existing updater created during walkThroughObject, cause it doesn't contain index
+                //rewrite existing updater created during walkThroughObject, for it doesn't contain index
                 obj.updater = createUpdater(obj, index)
             })
         }
@@ -129,30 +133,6 @@ export class ResourceEditor extends React.Component<any, State> {
         )
     }
 
-    createTree() {
-
-        function generateNodes(resource: Ecore.EObject): Array<any> {
-            return resource.eContents().map((res, idx) =>
-                <Tree.TreeNode key={res._id} eClass={res} icon={<Icon type="block" />} title={res.eClass.get('name')}>
-                    {res.eContents().length > 0 && generateNodes(res)}
-                </Tree.TreeNode>
-            )
-        }
-
-        return (
-            <Tree
-                showIcon
-                defaultExpandAll
-                switcherIcon={<Icon type="down" />}
-                onSelect={this.onTreeSelect}
-            >
-                <Tree.TreeNode style={{ fontWeight: '600' }} icon={<Icon type="cluster" />} title={this.state.resource.eClass.get('name')} key={this.state.resource._id}>
-                    {generateNodes(this.state.resource)}
-                </Tree.TreeNode>
-            </Tree>
-        )
-    }
-
     findObjectById(data: any, id: String): any {
 
         const walkThroughArray = (array: Array<any>): any => {
@@ -183,6 +163,31 @@ export class ResourceEditor extends React.Component<any, State> {
         }
     }
 
+    createTree() {
+
+        function generateNodes(resource: Ecore.EObject): Array<any> {
+            return resource.eContents().map((res, idx) =>
+                <Tree.TreeNode key={res._id} eClass={res} icon={<Icon type="block" />} title={res.eClass.get('name')}>
+                    {res.eContents().length > 0 && generateNodes(res)}
+                </Tree.TreeNode>
+            )
+        }
+
+        return (
+            <Tree
+                showIcon
+                defaultExpandAll
+                switcherIcon={<Icon type="down" />}
+                onSelect={this.onTreeSelect}
+                onRightClick={this.onRightClick}
+            >
+                <Tree.TreeNode style={{ fontWeight: '600' }} icon={<Icon type="cluster" />} title={this.state.resource.eClass.get('name')} key={this.state.resource._id}>
+                    {generateNodes(this.state.resource)}
+                </Tree.TreeNode>
+            </Tree>
+        )
+    }
+
     onTreeSelect = (selectedKeys: Array<String>, e: any) => {
         if (selectedKeys[0]) {
             const targetObject = this.findObjectById(this.state.resourceJSON, selectedKeys[0])
@@ -192,6 +197,10 @@ export class ResourceEditor extends React.Component<any, State> {
                 selectedKey: selectedKeys[0]
             })
         }
+    }
+
+    onRightClick = (e:any) => {
+        this.setState({ rightClickMenuVisible: true, rightMenuPosition: { x: e.event.clientX, y: e.event.clientY } })
     }
 
     prepareTableData(targetObject: ITargetObject, resource: Ecore.EObject): Array<any> {
@@ -233,18 +242,22 @@ export class ResourceEditor extends React.Component<any, State> {
         this.setState({ modalVisible: false })
     }
 
+    hideRightClickMenu = () =>{
+        this.setState({ rightClickMenuVisible: false })
+    }
+
+    componentWillUnmount() {
+        window.removeEventListener("click", this.hideRightClickMenu)
+    }
+
     componentDidUpdate(prevProps: Props, prevState: State) {
-        /*if(this.state.targetObject !== prevState.targetObject && this.state.selectedKey !== prevState.selectedKey){
-            this.nestUpdaters(this.state.resourceJSON, null)
-            this.setState({
-                tableData: this.prepareTableData(this.state.resourceJSON, this.state.targetObject, this.state.resource)
-            })
-        }*/
+        
     }
 
     componentDidMount(): void {
         this.getPackages()
         this.getResource()
+        window.addEventListener("click", this.hideRightClickMenu)
     }
 
     render() {
@@ -254,8 +267,8 @@ export class ResourceEditor extends React.Component<any, State> {
                     <Splitter
                         ref={this.splitterRef}
                         position="horizontal"
-                        primaryPaneMaxHeight="80%"
-                        primaryPaneMinHeight={0}
+                        primaryPaneMaxHeight="90%"
+                        primaryPaneMinHeight={"10%"}
                         primaryPaneHeight={localStorage.getItem('resource_splitter_pos') || "400px"}
                         dispatchResize={true}
                         postPoned={false}
@@ -282,6 +295,18 @@ export class ResourceEditor extends React.Component<any, State> {
                     <p>Some contents...</p>
                     <p>Some contents...</p>
                 </Modal>
+                {this.state.rightClickMenuVisible && <div className="right-menu" style={{
+                    position: "absolute",
+                    display: "inline-block",
+                    boxShadow: "2px 2px 8px -1px #cacaca",
+                    borderRadius: "4px",
+                    height: "100px",
+                    width: "100px",
+                    left: this.state.rightMenuPosition.x,
+                    top: this.state.rightMenuPosition.y,
+                    backgroundColor: "#fff",
+                    padding: "7px"
+                }}>Pavel</div>}
             </div>
         );
     }
