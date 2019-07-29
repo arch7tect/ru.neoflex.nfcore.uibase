@@ -91,9 +91,11 @@ export class ResourceEditor extends React.Component<any, State> {
 
         const walkThroughArray = (array: Array<any>) => {
             array.forEach((obj, index) => {
-                walkThroughObject(obj)
-                //rewrite existing updater created during walkThroughObject, for it doesn't contain index
-                obj.updater = createUpdater(obj, index)
+                //we have to check the type, cause it can be an array of strings, for e.g.
+                if(typeof obj === "object"){
+                    walkThroughObject(obj)
+                    obj.updater = createUpdater(obj, index)
+                }
             })
         }
 
@@ -206,6 +208,9 @@ export class ResourceEditor extends React.Component<any, State> {
     prepareTableData(targetObject: ITargetObject, resource: Ecore.EObject): Array<any> {
 
         const prepareValue = (key: string, value: any): any => {
+
+            //resource.eContainer.getEObject(targetObject._id).eClass.get('eAllStructuralFeatures')[1].get('eType').get('name')
+
             if (Array.isArray(value)) {
                 const elements = value.map((el, idx) => <React.Fragment key={idx}>{JSON.stringify(el)}<br /></React.Fragment>)
                 const component = <React.Fragment>
@@ -228,8 +233,12 @@ export class ResourceEditor extends React.Component<any, State> {
             }
         }
 
-        const featureList = resource.eContainer.getEObject(targetObject._id).eClass.get('eStructuralFeatures').array()
-        const preparedData = featureList.map((feature: Ecore.EObject, idx: Number) => ({ property: feature.get('name'), value: prepareValue(feature.get('name'), targetObject[feature.get('name')]), key: feature.get('name') + idx }))
+        const preparedData:Array<Object> = []
+        const featureList = resource.eContainer.getEObject(targetObject._id).eClass.get('eAllStructuralFeatures')
+        featureList.forEach((feature: Ecore.EObject, idx: Number) => {
+            const isContainment = Boolean(feature.get('containment')) === true;
+            if(!isContainment) preparedData.push({ property: feature.get('name'), value: prepareValue(feature.get('name'), targetObject[feature.get('name')]), key: feature.get('name') + idx })
+        })
 
         return preparedData
     }
