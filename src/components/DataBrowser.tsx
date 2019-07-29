@@ -4,7 +4,7 @@ import {Ecore} from "ecore";
 import {API} from "../modules/api";
 import {Link} from "react-router-dom";
 import forEach from "lodash/forEach"
-import {DataSearch} from "./DataSearch";
+import {WrappedDataSearch} from "./DataSearch";
 
 export interface Props {
 }
@@ -22,7 +22,7 @@ export class DataBrowser extends React.Component<any, State> {
         tableData: []
     };
 
-    handleSearch = (resources : Ecore.Resource[]) => {
+    handleSearch = (resources : Ecore.Resource[]): void => {
             const tableData:Array<any> = this.prepareTableData(resources);
             const columns:Array<any> = resources.length > 0 ? Object.keys(resources[0].to()).map((attr)=> ({title: attr, dataIndex: attr, key: attr})) : [];
             this.setState({ resources: resources, tableData: tableData, columns: columns})
@@ -73,14 +73,19 @@ export class DataBrowser extends React.Component<any, State> {
 
         return (
             <Row>
-                <Col span={24}>
+                <Col>
                         <div className="view-box">
-                            <DataSearch onSearch={this.handleSearch}/>
-                            {this.state.resources.length > 0 && <Table
+                            <WrappedDataSearch onSearch={this.handleSearch}/>
+                            {this.state.resources.length === 0
+                                ?
+                                "Not found"
+                                :
+                            <Table
                                 scroll={{x: 1300}}
                                 columns={columns.concat(actionColumnDef)}
                                 dataSource={this.state.tableData}
-                            />}
+                            />
+                            }
                         </div>
                 </Col>
             </Row>

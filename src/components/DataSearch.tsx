@@ -5,23 +5,46 @@ import Button from "antd/es/button";
 import Form from "antd/es/form";
 import Input from "antd/es/input";
 import FormItem from "antd/es/form/FormItem";
-import {Select} from "antd";
+import {Col, Row, Select} from "antd";
+// import {Props} from "./DataBrowser";
+import {FormComponentProps} from 'antd/lib/form/Form';
+import Checkbox from "antd/lib/checkbox";
 
-export interface Props {
+interface Props {
     onSearch: (resources: Ecore.Resource[])=>void;
 }
 
 interface State {
-    classes: Ecore.EObject[],
-    searchName: String|undefined,
-    selectedType: String
+    classes: Ecore.EObject[]
 }
 
-export class DataSearch extends React.Component<Props, State> {
-    state = {
-        classes: [], 
-        selectedType: "",
-        searchName: undefined
+class DataSearch extends React.Component<Props & FormComponentProps, State> {
+        state = {
+            classes: []
+    };
+
+    handleSubmit = (e:any) => {
+        e.preventDefault();
+
+        this.props.form.validateFields((err:any, values:any) => {
+            if (!err) {
+                let selectedClassObject:Ecore.EObject|undefined = this.state.classes.find((c:Ecore.EObject) => c.get('name') === values.selectClass1);
+
+                values.regular_expression1 ?
+                    (
+                        selectedClassObject && API.instance().findByKindAndRegexp(selectedClassObject as Ecore.EClass, values.name1)
+                            .then((resources) =>{
+                                this.props.onSearch(resources)
+                            }))
+                    :
+                    (
+                        selectedClassObject && API.instance().findByKindAndName(selectedClassObject as Ecore.EClass, values.name1)
+                            .then((resources) =>{
+                                this.props.onSearch(resources)
+                            })
+                    );
+            }
+        });
     };
 
     getEClasses(): void {
@@ -31,57 +54,57 @@ export class DataSearch extends React.Component<Props, State> {
         })
     }
 
-    handleSearch = () => {
-        let selectedClassObject:Ecore.EObject|undefined = this.state.classes.find((c:Ecore.EObject) => c.get('name') === this.state.selectedType);
-        selectedClassObject && API.instance().findByKind(selectedClassObject as Ecore.EClass, this.state.searchName)
-            .then((resources) =>{
-                this.props.onSearch(resources)
-            })
-    };
-
-    handleSelect = (value: any) => {
-        this.setState({ selectedType: value })
-    };
-
-    handleChangeSearchName = (event: any) =>{
-        this.setState({ searchName: event.currentTarget.value })
-    };
-
-    handleEdit = (event:any, record:any) => {
-        event.preventDefault()
-    };
-
     componentDidMount(): void {
         this.getEClasses()
     }
 
-    //getFieldDecorator
-    //validation
     render() {
-        const { Option } = Select;
-        // const { getFieldDecorator } = this.props.form;
+        const {Option} = Select;
+        const {getFieldDecorator} = this.props.form;
         return (
-            <Form layout="horizontal" >
-                <FormItem>
-                    <Select
-                        style={{width: '250px'}}
-                        autoFocus
-                        onChange={this.handleSelect}
-                        defaultValue={this.state.selectedType}>
-                        <Option key="---" value="">---</Option>
-                        {this.state.classes.map((c: Ecore.EObject, i: Number) =>
-                            <Option value={c.get('name')} key={`${i}${c.get('name')}`}>
-                                {`${c.eContainer.get('name')}: ${c.get('name')}`}
-                            </Option>)}
-                    </Select>
+            <Form layout="horizontal" onSubmit={this.handleSubmit}>
+                <FormItem hasFeedback>
+                    {getFieldDecorator('selectClass1', {
+                        rules: [{ required: true, message: 'Please select eClass' }],
+                    })
+                        (
+                        <Select
+                            style={{width: '270px'}}
+                            autoFocus>
+                            {this.state.classes.map((c: Ecore.EObject, i: Number) =>
+                                <Option value={c.get('name')} key={`${i}${c.get('name')}`}>
+                                    {`${c.eContainer.get('name')}: ${c.get('name')}`}
+                                </Option>)}
+                        </Select>
+                        )}
                 </FormItem>
                 <FormItem>
-                    <Input style={{width: '250px'}} onChange={this.handleChangeSearchName} type="text" />
+
+                    <Row>
+                        <Col>
+                            {getFieldDecorator('name1', {
+                                rules: [{ required: false, message: 'Please enter name' }]
+                            })
+                            (
+                            <Input placeholder="name" style={{width: '270px'}} type="text" />
+                            )}
+                            {getFieldDecorator('regular_expression1', {
+                                valuePropName: 'regular_expression2',
+                                initialValue: false
+                            })
+                            (
+                                <Checkbox style={{marginLeft: '10px'}}>Regular expression</Checkbox>
+                            )}
+                        </Col>
+                    </Row>
                 </FormItem>
+
                 <FormItem>
-                    <Button onClick={this.handleSearch}>Search</Button>
+                    <Button type="primary" htmlType="submit">Search</Button>
                 </FormItem>
             </Form>
         );
     }
 }
+
+export const WrappedDataSearch = Form.create<Props & FormComponentProps>()(DataSearch);
