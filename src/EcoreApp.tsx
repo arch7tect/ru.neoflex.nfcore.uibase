@@ -41,7 +41,7 @@ export class EcoreApp extends React.Component<any, State> {
 
     setPrincipal = (principal: any)=>{
         this.setState({principal}, API.instance().init)
-        this.props.history.push('/app');
+        //this.props.history.push('/app');
     };
 
     render() {
