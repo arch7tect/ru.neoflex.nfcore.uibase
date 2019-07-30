@@ -6,7 +6,7 @@ import {Icon as IconFA} from 'react-fa';
 import AceEditor from "react-ace";
 import 'brace/mode/json';
 import 'brace/theme/tomorrow';
-import Splitter from 'm-react-splitters'
+import Splitter from './CustomSplitter'
 
 export interface Props {
 }

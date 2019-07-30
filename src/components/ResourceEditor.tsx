@@ -4,7 +4,7 @@ import { Ecore } from "ecore";
 import { API } from "../modules/api";
 //import SplitPane from 'react-split-pane';
 //import Pane from 'react-split-pane/lib/Pane';
-import Splitter from 'm-react-splitters'
+import Splitter from './CustomSplitter'
 import update from 'immutability-helper';
 //import { any } from "prop-types";
 //import _filter from 'lodash/filter'
@@ -207,10 +207,33 @@ export class ResourceEditor extends React.Component<any, State> {
 
     prepareTableData(targetObject: ITargetObject, resource: Ecore.EObject): Array<any> {
 
-        const prepareValue = (key: string, value: any): any => {
+        const prepareValue = (eObject: Ecore.EObject, value: any): any => {
 
             //resource.eContainer.getEObject(targetObject._id).eClass.get('eAllStructuralFeatures')[1].get('eType').get('name')
 
+            if (eObject.isKindOf('EReference')) {
+                const elements = value ? value.map((el: Object, idx: number) => <React.Fragment key={idx}>{JSON.stringify(el)}<br /></React.Fragment>) : []
+                const component = <React.Fragment>
+                    {elements}
+                    <Button onClick={()=>this.setState({ modalVisible: true })}>...</Button>
+                </React.Fragment>
+                return component
+            } else if (eObject.isKindOf('EReference')) {
+
+            } else {
+                return <EditableTextArea
+                    editedProperty={eObject.get('name')}
+                    value={value}
+                    onChange={(newValue: Object) => {
+                        const updatedJSON = targetObject.updater(newValue)
+                        const nestedJSON = this.nestUpdaters(updatedJSON, null)
+                        const object = this.findObjectById(nestedJSON, targetObject._id)
+                        const preparedData = this.prepareTableData(object, this.state.resource)
+                        this.setState({ resourceJSON: nestedJSON, tableData: preparedData })
+                    }}
+                />
+            }
+/*
             if (Array.isArray(value)) {
                 const elements = value.map((el, idx) => <React.Fragment key={idx}>{JSON.stringify(el)}<br /></React.Fragment>)
                 const component = <React.Fragment>
@@ -230,14 +253,14 @@ export class ResourceEditor extends React.Component<any, State> {
                         this.setState({ resourceJSON: nestedJSON, tableData: preparedData })
                     }}
                 />
-            }
+            }*/
         }
 
         const preparedData:Array<Object> = []
         const featureList = resource.eContainer.getEObject(targetObject._id).eClass.get('eAllStructuralFeatures')
         featureList.forEach((feature: Ecore.EObject, idx: Number) => {
             const isContainment = Boolean(feature.get('containment')) === true;
-            if(!isContainment) preparedData.push({ property: feature.get('name'), value: prepareValue(feature.get('name'), targetObject[feature.get('name')]), key: feature.get('name') + idx })
+            if(!isContainment) preparedData.push({ property: feature.get('name'), value: prepareValue(feature, targetObject[feature.get('name')]), key: feature.get('name') + idx })
         })
 
         return preparedData
@@ -287,6 +310,7 @@ export class ResourceEditor extends React.Component<any, State> {
                         }}
                     >
                         <div className="view-box" style={{ height: '100%', width: '100%', overflow: 'auto' }}>
+
                             {this.state.resource.eClass && this.createTree()}
                         </div>
                         <div style={{ height: '100%', width: '100%', overflow: 'auto', backgroundColor: '#fff' }}>
