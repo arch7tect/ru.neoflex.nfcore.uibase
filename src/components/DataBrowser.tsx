@@ -13,19 +13,22 @@ interface State {
     resources: Ecore.Resource[],
     columns: Array<any>,
     tableData: Array<any>
+    notFoundActivator: boolean
 }
 
 export class DataBrowser extends React.Component<any, State> {
     state = {
         resources: [], 
         columns: [],
-        tableData: []
+        tableData: [],
+        notFoundActivator: false
     };
 
     handleSearch = (resources : Ecore.Resource[]): void => {
-            const tableData:Array<any> = this.prepareTableData(resources);
-            const columns:Array<any> = resources.length > 0 ? Object.keys(resources[0].to()).map((attr)=> ({title: attr, dataIndex: attr, key: attr})) : [];
-            this.setState({ resources: resources, tableData: tableData, columns: columns})
+        this.state.notFoundActivator = true;
+        const tableData:Array<any> = this.prepareTableData(resources);
+        const columns:Array<any> = resources.length > 0 ? Object.keys(resources[0].to()).map((attr)=> ({title: attr, dataIndex: attr, key: attr})) : [];
+        this.setState({ resources: resources, tableData: tableData, columns: columns})
     };
 
     prepareTableData(resources:Ecore.Resource[]):Array<any>{
@@ -78,7 +81,7 @@ export class DataBrowser extends React.Component<any, State> {
                             <WrappedDataSearch onSearch={this.handleSearch}/>
                             {this.state.resources.length === 0
                                 ?
-                                "Not found"
+                                    !this.state.notFoundActivator ? '' : 'Not found'
                                 :
                             <Table
                                 scroll={{x: 1300}}
