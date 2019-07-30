@@ -255,25 +255,37 @@ export class API implements IErrorHandler {
         })
     }
 
-    findByKind(eClass: Ecore.EClass, objectName?: string, level: number = 1): Promise<Ecore.Resource[]> {
+    findByKindAndName(eClass: Ecore.EClass, objectName?: string, level: number = 1) {
+        if (objectName) {
+            return this.findByKind(eClass, {contents: {name: objectName}}, level)
+        }
+        return this.findByKind(eClass, {contents: {eClass: eClass.eURI()}}, level)
+    }
+
+    findByKindAndRegexp(eClass: Ecore.EClass, objectName?: string, level: number = 1) {
+        if (objectName) {
+            return this.findByKind(eClass, {contents: {name: {"$regex": objectName}}}, level)
+        }
+        return this.findByKind(eClass, {contents: {eClass: eClass.eURI()}}, level)
+    }
+
+    findByKind(eClass: Ecore.EClass, selector: any, level: number = 1): Promise<Ecore.Resource[]> {
         const eAllSubTypes: Ecore.EClass[] = (eClass.get('eAllSubTypes') as Ecore.EClass[]);
         const promises: Promise<Ecore.Resource[]>[] = [eClass, ...eAllSubTypes]
             .filter(c => !c.get('abstract'))
-            .map(c => this.findByClass(c, objectName, level));
+            .map(c => this.findByClass(c, selector, level));
         return Promise.all(promises).then((resources: Ecore.Resource[][]) => {
             return resources.flat();
         })
     }
 
-    findByClass(eClass: Ecore.EClass, objectName?: string, level: number = 1): Promise<Ecore.Resource[]> {
-        return this.findByClassURI(eClass.eURI(), objectName, level);
+    findByClass(eClass: Ecore.EClass, selector: any, level: number = 1): Promise<Ecore.Resource[]> {
+        return this.findByClassURI(eClass.eURI(), selector, level);
     }
 
-    findByClassURI(classURI: string, objectName?: string, level: number = 1): Promise<Ecore.Resource[]> {
+    findByClassURI(classURI: string, selector: any, level: number = 1): Promise<Ecore.Resource[]> {
         let selection: any = {contents: {eClass: classURI}};
-        if (objectName) {
-            selection.contents['name'] = objectName;
-        }
+        selection = _.merge(selection, selector);
         return this.find(selection, level).then(r=>r.resources);
     }
 
