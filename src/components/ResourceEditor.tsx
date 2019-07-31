@@ -334,6 +334,7 @@ export class ResourceEditor extends React.Component<any, State> {
                         </div>
                     </Splitter>
                 </div>
+                //на onSelect возвратить список ресурсов
                 <Modal
                     title="Add resource"
                     visible={this.state.modalVisible}

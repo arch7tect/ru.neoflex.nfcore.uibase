@@ -9,6 +9,7 @@ import {Select, Tabs} from "antd";
 import {FormComponentProps} from 'antd/lib/form/Form';
 import Checkbox from "antd/lib/checkbox";
 import AceEditor from "react-ace";
+import 'brace/theme/tomorrow';
 
 interface Props {
     onSearch: (resources: Ecore.Resource[]) => void;
@@ -16,17 +17,11 @@ interface Props {
 
 interface State {
     classes: Ecore.EObject[];
-    json: string;
-    splitterPosition: number;
-    activeTab: string;
 }
 
 class DataSearch extends React.Component<Props & FormComponentProps, State> {
     state = {
-        classes: [],
-        json: JSON.stringify({contents: {eClass: "ru.neoflex.nfcore.base.auth#//User"}}, null, 4),
-        splitterPosition: 50,
-        activeTab: 'data_search'
+        classes: []
     };
 
     handleSubmit = (e: any) => {
@@ -36,7 +31,7 @@ class DataSearch extends React.Component<Props & FormComponentProps, State> {
                 let selectedClassObject: Ecore.EObject | undefined = this.state.classes.find((c: Ecore.EObject) => c.get('name') === values.selectEClass);
                 values.key === 'json_search'
                     ?
-                    API.instance().find(JSON.parse(this.state.json)).then(results => {
+                    API.instance().find(JSON.parse(values.json_field)).then(results => {
                         this.props.onSearch(results.resources)
                     })
                     :
@@ -52,10 +47,6 @@ class DataSearch extends React.Component<Props & FormComponentProps, State> {
                                 this.props.onSearch(resources)
                             }))}
         });
-    };
-
-    onJsonChange = (json: string) => {
-        this.setState({json})
     };
 
     getEClasses(): void {
@@ -117,22 +108,32 @@ class DataSearch extends React.Component<Props & FormComponentProps, State> {
                         </TabPane>
                         <TabPane tab='Json Search' key='json_search'>
                             <Form.Item>
-                                <div>
+                                {getFieldDecorator('json_field', {
+                                    initialValue: JSON.stringify({
+                                        contents: {eClass: "ru.neoflex.nfcore.base.auth#//User"}}, null, 4),
+                                    rules: [{
+                                        required: getFieldValue('key') === 'json_search',
+                                        message: 'Please enter json'
+                                    }]
+                                })(
+                                    <div>
                                     <AceEditor
                                         ref={"aceEditor"}
                                         mode={"json"}
-                                        width={""}
-                                        onChange={this.onJsonChange}
+                                        width={"100%"}
+                                        onChange={(json_field: string) => {
+                                            setFields({json_field: {value: json_field}});
+                                        }}
                                         editorProps={{$blockScrolling: true}}
-                                        value={this.state.json}
+                                        value={getFieldValue('json_field')}
                                         showPrintMargin={false}
                                         theme={"tomorrow"}
-                                        debounceChangePeriod={500}
-                                        height={"100px"}
-                                        minLines={5}
+                                        debounceChangePeriod={100}
+                                        height={"104px"}
                                     />
-                                </div>
-                            </Form.Item>
+                                    </div>
+                                    )}
+                              </Form.Item>
                         </TabPane>
                     </Tabs>
                 )}
