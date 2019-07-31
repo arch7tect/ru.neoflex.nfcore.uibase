@@ -1,5 +1,5 @@
 import * as React from "react";
-import { Tree, Icon, Table, Modal, Button } from 'antd';
+import { Tree, Icon, Table, Modal, Button, Select, Row, Col } from 'antd';
 import { Ecore } from "ecore";
 import { API } from "../modules/api";
 //import SplitPane from 'react-split-pane';
@@ -218,8 +218,18 @@ export class ResourceEditor extends React.Component<any, State> {
                     <Button onClick={()=>this.setState({ modalVisible: true })}>...</Button>
                 </React.Fragment>
                 return component
-            } else if (eObject.isKindOf('EReference')) {
-
+            } else if (eObject.get('eType').isKindOf('EDataType') && eObject.get('eType').get('name') === "EBoolean") {
+                return <Select style={{ width: "300px" }} onChange={(newValue: Object) => {
+                        const updatedJSON = targetObject.updater(newValue)
+                        const nestedJSON = this.nestUpdaters(updatedJSON, null)
+                        const object = this.findObjectById(nestedJSON, targetObject._id)
+                        const preparedData = this.prepareTableData(object, this.state.resource)
+                        this.setState({ resourceJSON: nestedJSON, tableData: preparedData })
+                    }}>
+                        <Select.Option value={undefined}>Null</Select.Option>
+                        <Select.Option value={"true"}>True</Select.Option>
+                        <Select.Option value={"false"}>False</Select.Option>
+                </Select>
             } else {
                 return <EditableTextArea
                     editedProperty={eObject.get('name')}
@@ -310,8 +320,14 @@ export class ResourceEditor extends React.Component<any, State> {
                         }}
                     >
                         <div className="view-box" style={{ height: '100%', width: '100%', overflow: 'auto' }}>
-
-                            {this.state.resource.eClass && this.createTree()}
+                            <Row>
+                                <Col span={23}>
+                                    {this.state.resource.eClass && this.createTree()}
+                                </Col>
+                                <Col span={1}>
+                                    <Button icon="plus" type="primary" style={{ marginLeft: '20px' }} shape="circle" size="large" onClick={()=>this.setState({ modalVisible: true })}></Button>
+                                </Col>
+                            </Row>
                         </div>
                         <div style={{ height: '100%', width: '100%', overflow: 'auto', backgroundColor: '#fff' }}>
                             {this.createPropertyTable()}
