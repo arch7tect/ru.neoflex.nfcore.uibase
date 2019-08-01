@@ -10,10 +10,11 @@ export interface Props {
 }
 
 interface State {
-    resources: Ecore.Resource[],
-    columns: Array<any>,
-    tableData: Array<any>
-    notFoundActivator: boolean
+    resources: Ecore.Resource[];
+    columns: Array<any>;
+    tableData: Array<any>;
+    notFoundActivator: boolean;
+    result: string;
 }
 
 export class DataBrowser extends React.Component<any, State> {
@@ -21,11 +22,12 @@ export class DataBrowser extends React.Component<any, State> {
         resources: [], 
         columns: [],
         tableData: [],
-        notFoundActivator: false
+        notFoundActivator: false,
+        result: ''
     };
 
     handleSearch = (resources : Ecore.Resource[]): void => {
-        this.state.notFoundActivator = true;
+        this.setState({notFoundActivator: true});
         const tableData:Array<any> = this.prepareTableData(resources);
         const columns:Array<any> = resources.length > 0 ? Object.keys(resources[0].to()).map((attr)=> ({title: attr, dataIndex: attr, key: attr})) : [];
         this.setState({ resources: resources, tableData: tableData, columns: columns})
@@ -58,7 +60,6 @@ export class DataBrowser extends React.Component<any, State> {
 
     render() {
         const columns:Array<any> = this.state.columns;
-
         const actionColumnDef = [{
             title: 'Action',
             dataIndex: 'action',
@@ -77,21 +78,19 @@ export class DataBrowser extends React.Component<any, State> {
         return (
             <Row>
                 <Col>
-                        <div className="view-box">
-                            <WrappedDataSearch onSearch={this.handleSearch}/>
-                            {this.state.resources.length === 0
-                                ?
-                                    !this.state.notFoundActivator ? '' : 'Not found'
-                                :
+                    <div className="view-box">
+                        <WrappedDataSearch onSearch={this.handleSearch}/>
+                        {this.state.resources.length === 0
+                            ?
+                            !this.state.notFoundActivator ? '' : 'Not found'
+                            :
                             <Table
                                 scroll={{x: 1300}}
                                 columns={columns.concat(actionColumnDef)}
                                 dataSource={this.state.tableData}
-                            />
-                            }
-                        </div>
+                            />}
+                    </div>
                 </Col>
             </Row>
         );
-    }
-}
+    }}
