@@ -5,7 +5,7 @@ import Button from "antd/es/button";
 import Form from "antd/es/form";
 import Input from "antd/es/input";
 import FormItem from "antd/es/form/FormItem";
-import {Select, Tabs} from "antd";
+import {Icon, Select, Tabs} from "antd";
 import {FormComponentProps} from 'antd/lib/form/Form';
 import Checkbox from "antd/lib/checkbox";
 import AceEditor from "react-ace";
@@ -13,6 +13,7 @@ import 'brace/theme/tomorrow';
 
 interface Props {
     onSearch: (resources: Ecore.Resource[]) => void;
+    specialEClass?: string;
 }
 
 interface State {
@@ -50,7 +51,7 @@ class DataSearch extends React.Component<Props & FormComponentProps, State> {
     };
 
     getEClasses(): void {
-        API.instance().fetchAllClasses(false).then(classes => {
+            API.instance().fetchAllClasses(false).then(classes => {
             const filtered = classes.filter((c: Ecore.EObject) => !c.get('interface'));
             this.setState({classes: filtered})
         })
@@ -73,12 +74,14 @@ class DataSearch extends React.Component<Props & FormComponentProps, State> {
                         <TabPane tab='Data Search' key='data_search'>
                             <FormItem>
                                 {getFieldDecorator('selectEClass', {
+                                    initialValue: !!this.props.specialEClass ? this.props.specialEClass : undefined,
                                     rules: [{
                                         required: getFieldValue('key') === 'data_search',
-                                        message: 'Please select eClass'
+                                        message: 'Please select eClass',
                                     }],
                                 })(
                                     <Select
+                                        disabled={!!this.props.specialEClass}
                                         style={{width: '270px'}}
                                         autoFocus>
                                         {this.state.classes.map((c: Ecore.EObject, i: Number) =>
@@ -110,7 +113,7 @@ class DataSearch extends React.Component<Props & FormComponentProps, State> {
                             <Form.Item>
                                 {getFieldDecorator('json_field', {
                                     initialValue: JSON.stringify({
-                                        contents: {eClass: "ru.neoflex.nfcore.base.auth#//User"}}, null, 4),
+                                    contents: {eClass: "ru.neoflex.nfcore.base.auth#//" + (this.props.specialEClass || "User")}}, null, 4),
                                     rules: [{
                                         required: getFieldValue('key') === 'json_search',
                                         message: 'Please enter json'
@@ -118,6 +121,7 @@ class DataSearch extends React.Component<Props & FormComponentProps, State> {
                                 })(
                                     <div>
                                     <AceEditor
+                                        readOnly={!!this.props.specialEClass}
                                         ref={"aceEditor"}
                                         mode={"json"}
                                         width={"100%"}
@@ -138,7 +142,9 @@ class DataSearch extends React.Component<Props & FormComponentProps, State> {
                     </Tabs>
                 )}
                 <FormItem>
-                    <Button type="primary" htmlType="submit">Search</Button>
+                    <Button type="primary" htmlType="submit" style={{width: '100px', fontSize: '17px'}}>
+                        <Icon type="search" />
+                    </Button>
                 </FormItem>
             </Form>
         );

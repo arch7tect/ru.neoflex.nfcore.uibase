@@ -1,5 +1,5 @@
 import * as React from "react";
-import {Layout, Menu} from 'antd';
+import {Icon, Layout, Menu} from 'antd';
 import 'antd/dist/antd.css';
 //import {Ecore} from "ecore";
 import {API} from './modules/api'
@@ -10,6 +10,7 @@ import {QueryRunner} from "./components/QueryRunner";
 import {Login} from "./components/Login";
 import logo from "./logo.png";
 import {DataBrowser} from "./components/DataBrowser";
+import {Test} from "./components/Test";
 
 const { Header, Content, Sider } = Layout;
 
@@ -65,10 +66,10 @@ export class EcoreApp extends React.Component<any, State> {
             <Layout style={{height: '100vh'}}>
                 <Header style={{height: '40px', padding: "0px"}}>
                     <Menu theme="dark" mode="horizontal" onClick={(e) => this.onRightMenu(e)} style={{float: "right", height: '100%'}}>
-                        <Menu.SubMenu title={<span> {principal.name}</span>} style={{float: "right", height: '100%', top: '-3px'}}>
-                            <Menu.Item key={'logout'}>Logout</Menu.Item>
-                            <Menu.Item key={'developer'}>Developer</Menu.Item>
-                            <Menu.Item key={'app'}>App</Menu.Item>
+                        <Menu.SubMenu title={<span> <Icon type="user" style={{fontSize: '17px', marginRight: '0'}}/> {principal.name}</span>} style={{float: "right", height: '100%', top: '-3px'}}>
+                            <Menu.Item key={'logout'}><Icon type="logout" style={{fontSize: '17px', marginLeft: '55px'}}/></Menu.Item>
+                            <Menu.Item key={'developer'}><Icon type="setting" style={{fontSize: '17px', marginLeft: '55px'}} theme="filled"/></Menu.Item>
+                            <Menu.Item key={'app'}><Icon type="sketch" style={{fontSize: '17px', marginLeft: '55px'}}/></Menu.Item>
                         </Menu.SubMenu>
                     </Menu>
                 </Header>
@@ -92,6 +93,7 @@ export class EcoreApp extends React.Component<any, State> {
                         <Menu.Item key={'metadata'}><Link to={`/settings/metadata`}>Metadata</Link></Menu.Item>
                         <Menu.Item key={'data'}><Link to={`/settings/data`}>Data</Link></Menu.Item>
                         <Menu.Item key={'query'}><Link to={`/settings/query`}>Query</Link></Menu.Item>
+                        <Menu.Item key={'test'}><Link to={`/settings/test`}>Test</Link></Menu.Item>
                     </Menu>
                 </Sider>
                 <Layout>
@@ -101,6 +103,7 @@ export class EcoreApp extends React.Component<any, State> {
                             <Route exact={true} path='/settings/data' component={DataBrowser}/>
                             <Route path='/settings/data/:id/:ref' component={ResourceEditor}/>
                             <Route path='/settings/query' component={QueryRunner}/>
+                            <Route path='/settings/test' component={Test}/>
                         </Switch>
                     </Content>
                 </Layout>
