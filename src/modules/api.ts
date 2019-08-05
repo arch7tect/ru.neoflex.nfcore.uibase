@@ -1,4 +1,4 @@
-import {Ecore} from "ecore";
+import Ecore from "ecore";
 import _ from 'lodash';
 
 export class Error {

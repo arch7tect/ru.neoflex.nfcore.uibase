@@ -1,8 +1,7 @@
 import * as React from "react";
-import {Button, Col, Icon, Modal, Row, Select, Table, Tree} from 'antd';
-import {Ecore} from "ecore";
-import {API} from "../modules/api";
-//import SplitPane from 'react-split-pane';
+import { Tree, Icon, Table, Modal, Button, Select, Row, Col } from 'antd';
+import Ecore from "ecore";
+import { API } from "../modules/api";//import SplitPane from 'react-split-pane';
 //import Pane from 'react-split-pane/lib/Pane';
 import Splitter from './CustomSplitter'
 import update from 'immutability-helper';

@@ -17,7 +17,6 @@ interface State {
     splitterPosition: number;
 }
 
-
 export class QueryRunner extends React.Component<any, State> {
 
     private splitterRef: React.RefObject<any>

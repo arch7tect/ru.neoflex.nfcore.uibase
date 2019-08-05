@@ -1,5 +1,5 @@
 import * as React from "react";
-import {Ecore} from "ecore";
+import Ecore from "ecore";
 import {API} from "../modules/api";
 import Button from "antd/es/button";
 import Form from "antd/es/form";

@@ -19,7 +19,9 @@
     "isolatedModules": true,
     "noEmit": true,
     "jsx": "preserve",
-    "typeRoots" : ["./local_modules/@types", "./node_modules/@types"]
+    "typeRoots": [
+      "./node_modules/@types"
+    ]
   },
   "include": [
     "src"
