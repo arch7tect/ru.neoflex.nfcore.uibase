@@ -66,10 +66,10 @@ export class EcoreApp extends React.Component<any, State> {
             <Layout style={{height: '100vh'}}>
                 <Header style={{height: '40px', padding: "0px"}}>
                     <Menu theme="dark" mode="horizontal" onClick={(e) => this.onRightMenu(e)} style={{float: "right", height: '100%'}}>
-                        <Menu.SubMenu title={<span> <Icon type="user" style={{fontSize: '17px', marginRight: '0'}}/> {principal.name}</span>} style={{float: "right", height: '100%', top: '-3px'}}>
-                            <Menu.Item key={'logout'}><Icon type="logout" style={{fontSize: '17px', marginLeft: '55px'}}/></Menu.Item>
-                            <Menu.Item key={'developer'}><Icon type="setting" style={{fontSize: '17px', marginLeft: '55px'}} theme="filled"/></Menu.Item>
-                            <Menu.Item key={'app'}><Icon type="sketch" style={{fontSize: '17px', marginLeft: '55px'}}/></Menu.Item>
+                        <Menu.SubMenu title={<span><Icon type="user" style={{fontSize: '17px', marginRight: '0'}}/> {principal.name}</span>} style={{float: "right", height: '100%', top: '-3px'}}>
+                            <Menu.Item key={'logout'}><Icon type="logout" style={{fontSize: '17px'}}/>Logout</Menu.Item>
+                            <Menu.Item key={'developer'}><Icon type="setting" style={{fontSize: '17px'}} theme="filled"/>Developer</Menu.Item>
+                            <Menu.Item key={'app'}><Icon type="sketch" style={{fontSize: '17px'}}/>App</Menu.Item>
                         </Menu.SubMenu>
                     </Menu>
                 </Header>
