@@ -1,8 +1,7 @@
 import * as React from "react";
 import { Tree, Icon, Table, Modal, Button, Select, Row, Col } from 'antd';
 import Ecore from "ecore";
-import { API } from "../modules/api";
-//import SplitPane from 'react-split-pane';
+import { API } from "../modules/api";//import SplitPane from 'react-split-pane';
 //import Pane from 'react-split-pane/lib/Pane';
 import Splitter from './CustomSplitter'
 import update from 'immutability-helper';
@@ -10,6 +9,7 @@ import update from 'immutability-helper';
 //import _filter from 'lodash/filter'
 //import _map from 'lodash/map'
 import EditableTextArea from './EditableTextArea'
+import {WrappedResourceSearch} from "./ResourceSearch";
 
 interface ITargetObject {
     [key: string]: any;
@@ -33,7 +33,7 @@ interface State {
 
 export class ResourceEditor extends React.Component<any, State> {
 
-    private splitterRef: React.RefObject<any>
+    private splitterRef: React.RefObject<any>;
 
     constructor(props: any) {
         super(props);
@@ -51,7 +51,7 @@ export class ResourceEditor extends React.Component<any, State> {
         modalVisible: false,
         rightClickMenuVisible: false,
         rightMenuPosition: {x:100,y:100}
-    }
+    };
 
     getPackages(): void {
         API.instance().fetchPackages().then(packages => {
@@ -75,11 +75,11 @@ export class ResourceEditor extends React.Component<any, State> {
 
         const createUpdater = (data: Object, init_idx?: Number) => {
             return function updater(newValues: Object, indexForParentUpdater?: any, targetArray?: any) {
-                const currentObject = data
-                const idx: any = init_idx
-                const prop: any = property
-                const parent = parentObject
-                let updatedData
+                const currentObject = data;
+                const idx: any = init_idx;
+                const prop: any = property;
+                const parent = parentObject;
+                let updatedData;
                 if (targetArray) {
                     updatedData = update(currentObject as any, { [targetArray]: { [indexForParentUpdater]: { $merge: newValues } } })
                 } else {
@@ -87,7 +87,7 @@ export class ResourceEditor extends React.Component<any, State> {
                 }
                 return parent && parent.updater ? parent.updater(updatedData, idx, prop) : updatedData
             }
-        }
+        };
 
         const walkThroughArray = (array: Array<any>) => {
             array.forEach((obj, index) => {
@@ -97,14 +97,14 @@ export class ResourceEditor extends React.Component<any, State> {
                     obj.updater = createUpdater(obj, index)
                 }
             })
-        }
+        };
 
         const walkThroughObject = (obj: any) => {
-            obj.updater = createUpdater(obj)
+            obj.updater = createUpdater(obj);
             Object.entries(obj).forEach(([key, value]) => {
                 if (Array.isArray(value)) this.nestUpdaters(value, obj, key)
             })
-        }
+        };
 
         if (Array.isArray(json)) {
             walkThroughArray(json)
@@ -142,21 +142,21 @@ export class ResourceEditor extends React.Component<any, State> {
                 if (el._id && el._id === id) {
                     return el
                 } else {
-                    const result = this.findObjectById(el, id)
+                    const result = this.findObjectById(el, id);
                     if (result) return result
                 }
             }
-        }
+        };
 
         const walkThroughObject = (obj: Object): any => {
-            let result
+            let result;
             Object.entries(obj).forEach(([key, value]) => {
                 if (Array.isArray(value)) result = this.findObjectById(value, id)
-            })
+            });
             if (result) return result
-        }
+        };
 
-        if (data._id === id) return data
+        if (data._id === id) return data;
 
         if (Array.isArray(data)) {
             return walkThroughArray(data)
@@ -192,18 +192,18 @@ export class ResourceEditor extends React.Component<any, State> {
 
     onTreeSelect = (selectedKeys: Array<String>, e: any) => {
         if (selectedKeys[0]) {
-            const targetObject = this.findObjectById(this.state.resourceJSON, selectedKeys[0])
+            const targetObject = this.findObjectById(this.state.resourceJSON, selectedKeys[0]);
             this.setState({
                 tableData: this.prepareTableData(targetObject, this.state.resource),
                 targetObject: targetObject,
                 selectedKey: selectedKeys[0]
             })
         }
-    }
+    };
 
     onRightClick = (e:any) => {
         this.setState({ rightClickMenuVisible: true, rightMenuPosition: { x: e.event.clientX, y: e.event.clientY } })
-    }
+    };
 
     prepareTableData(targetObject: ITargetObject, resource: Ecore.EObject): Array<any> {
 
@@ -216,14 +216,14 @@ export class ResourceEditor extends React.Component<any, State> {
                 const component = <React.Fragment>
                     {elements}
                     <Button onClick={()=>this.setState({ modalVisible: true })}>...</Button>
-                </React.Fragment>
+                </React.Fragment>;
                 return component
             } else if (eObject.get('eType').isKindOf('EDataType') && eObject.get('eType').get('name') === "EBoolean") {
                 return <Select style={{ width: "300px" }} onChange={(newValue: Object) => {
-                        const updatedJSON = targetObject.updater(newValue)
-                        const nestedJSON = this.nestUpdaters(updatedJSON, null)
-                        const object = this.findObjectById(nestedJSON, targetObject._id)
-                        const preparedData = this.prepareTableData(object, this.state.resource)
+                        const updatedJSON = targetObject.updater(newValue);
+                        const nestedJSON = this.nestUpdaters(updatedJSON, null);
+                        const object = this.findObjectById(nestedJSON, targetObject._id);
+                        const preparedData = this.prepareTableData(object, this.state.resource);
                         this.setState({ resourceJSON: nestedJSON, tableData: preparedData })
                     }}>
                         <Select.Option value={undefined}>Null</Select.Option>
@@ -235,10 +235,10 @@ export class ResourceEditor extends React.Component<any, State> {
                     editedProperty={eObject.get('name')}
                     value={value}
                     onChange={(newValue: Object) => {
-                        const updatedJSON = targetObject.updater(newValue)
-                        const nestedJSON = this.nestUpdaters(updatedJSON, null)
-                        const object = this.findObjectById(nestedJSON, targetObject._id)
-                        const preparedData = this.prepareTableData(object, this.state.resource)
+                        const updatedJSON = targetObject.updater(newValue);
+                        const nestedJSON = this.nestUpdaters(updatedJSON, null);
+                        const object = this.findObjectById(nestedJSON, targetObject._id);
+                        const preparedData = this.prepareTableData(object, this.state.resource);
                         this.setState({ resourceJSON: nestedJSON, tableData: preparedData })
                     }}
                 />
@@ -264,29 +264,29 @@ export class ResourceEditor extends React.Component<any, State> {
                     }}
                 />
             }*/
-        }
+        };
 
-        const preparedData:Array<Object> = []
+        const preparedData:Array<Object> = [];
         const featureList = resource.eContainer.getEObject(targetObject._id).eClass.get('eAllStructuralFeatures')
         featureList.forEach((feature: Ecore.EObject, idx: Number) => {
-            const isContainment = Boolean(feature.get('containment')) === true;
+            const isContainment = Boolean(feature.get('containment'));
             if(!isContainment) preparedData.push({ property: feature.get('name'), value: prepareValue(feature, targetObject[feature.get('name')]), key: feature.get('name') + idx })
-        })
+        });
 
         return preparedData
     }
 
     handleModalOk = () => {
         this.setState({ modalVisible: false })
-    }
+    };
 
     handleModalCancel = () => {
         this.setState({ modalVisible: false })
-    }
+    };
 
     hideRightClickMenu = () =>{
         this.setState({ rightClickMenuVisible: false })
-    }
+    };
 
     componentWillUnmount() {
         window.removeEventListener("click", this.hideRightClickMenu)
@@ -297,10 +297,14 @@ export class ResourceEditor extends React.Component<any, State> {
     }
 
     componentDidMount(): void {
-        this.getPackages()
-        this.getResource()
+        this.getPackages();
+        this.getResource();
         window.addEventListener("click", this.hideRightClickMenu)
     }
+
+    handleSelect = (resources : Ecore.Resource[]): void => {
+        this.setState({ modalVisible: false })
+    };
 
     render() {
         return (
@@ -335,14 +339,13 @@ export class ResourceEditor extends React.Component<any, State> {
                     </Splitter>
                 </div>
                 <Modal
+                    width={'1000px'}
                     title="Add resource"
                     visible={this.state.modalVisible}
                     onOk={this.handleModalOk}
                     onCancel={this.handleModalCancel}
                 >
-                    <p>Some contents...</p>
-                    <p>Some contents...</p>
-                    <p>Some contents...</p>
+                    <WrappedResourceSearch onSelect={this.handleSelect}/>
                 </Modal>
                 {this.state.rightClickMenuVisible && <div className="right-menu" style={{
                     position: "absolute",
