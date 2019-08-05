@@ -1,6 +1,6 @@
 import * as React from "react";
 import {Col, Row, Table} from 'antd';
-import {Ecore} from "ecore";
+import Ecore from "ecore"
 import {API} from "../modules/api";
 
 export interface Props {

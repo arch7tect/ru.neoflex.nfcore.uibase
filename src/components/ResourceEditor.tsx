@@ -1,6 +1,6 @@
 import * as React from "react";
 import { Tree, Icon, Table, Modal, Button, Select, Row, Col } from 'antd';
-import { Ecore } from "ecore";
+import Ecore from "ecore";
 import { API } from "../modules/api";
 //import SplitPane from 'react-split-pane';
 //import Pane from 'react-split-pane/lib/Pane';
