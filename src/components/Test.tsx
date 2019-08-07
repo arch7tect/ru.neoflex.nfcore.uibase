@@ -3,6 +3,7 @@ import {Checkbox, Form} from 'antd';
 import FormItem from "antd/es/form/FormItem";
 import {WrappedSearchGrid} from "./SearchGrid";
 import {Ecore} from "ecore";
+import {API} from "../modules/api";
 
 interface Props {
 }
@@ -10,14 +11,18 @@ interface Props {
 interface State {
     selectOn: boolean;
     actionOn: boolean;
-    specialEClass: string;
+    specialEClassStr: string;
+    specialEClass?: Ecore.EClass;
+    classes: Ecore.EObject[];
 }
 
 export class Test extends React.Component<any, State> {
     state = {
         selectOn: false,
         actionOn: false,
-        specialEClass: 'Role'
+        specialEClassStr: 'Role',
+        specialEClass: undefined,
+        classes: []
     };
 
     CheckSelectOn = () => {
@@ -28,12 +33,19 @@ export class Test extends React.Component<any, State> {
         this.setState({actionOn: !this.state.actionOn})
     };
 
-    CheckEClassOn = () => {
-        this.setState({specialEClass: this.state.specialEClass != '' ? '' : 'Role'})
-    };
-
-
     hendler = (resources: Ecore.Resource[]) => {};
+
+    getEClasses = () => {
+        this.state.specialEClass === undefined
+        ?
+        API.instance().fetchAllClasses(false).then(classes => {
+            const filtered = classes.filter((c: Ecore.EObject) =>
+                !c.get('interface') && c._id === "//Role");
+            this.setState({specialEClass: filtered[0]})
+        })
+            :
+            this.setState({specialEClass: undefined})
+    };
 
     render() {
         return (
@@ -41,17 +53,18 @@ export class Test extends React.Component<any, State> {
                 <FormItem>
                     <Checkbox style={{marginLeft: '10px'}} onChange={this.CheckSelectOn}>Select On</Checkbox>
                     <Checkbox style={{marginLeft: '10px'}} onChange={this.CheckActionOn}>Action On</Checkbox>
-                    <Checkbox defaultChecked={true} style={{marginLeft: '10px'}} onChange={this.CheckEClassOn}>EClass Role Only</Checkbox>
+                    <Checkbox defaultChecked={false} style={{marginLeft: '10px'}} onChange={this.getEClasses}>EClass Role Only</Checkbox>
                 </FormItem>
                 <FormItem>
-                    {this.state.specialEClass === undefined
+                    {
+                        this.state.specialEClass === undefined
                         ?
                         this.state.selectOn
                             ?
                             <WrappedSearchGrid onSelect={this.hendler} showAction={this.state.actionOn}/>
                             :
                             <WrappedSearchGrid showAction={this.state.actionOn}/>
-                            :
+                        :
                         this.state.selectOn
                             ?
                             <WrappedSearchGrid onSelect={this.hendler} showAction={this.state.actionOn} specialEClass={this.state.specialEClass}/>

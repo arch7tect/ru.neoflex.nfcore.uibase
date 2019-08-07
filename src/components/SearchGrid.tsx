@@ -11,7 +11,7 @@ import FormItem from "antd/es/form/FormItem";
 interface Props {
     onSelect?: (resources: Ecore.Resource[]) => void;
     showAction?: boolean;
-    specialEClass?: string;
+    specialEClass?: Ecore.EClass | undefined;
 }
 
 interface State {
@@ -21,7 +21,6 @@ interface State {
     notFoundActivator: boolean;
     result: string;
     selectedRowKeys: any[];
-    loading: boolean;
 }
 
 class SearchGrid extends React.Component<Props & FormComponentProps, State> {
@@ -31,30 +30,109 @@ class SearchGrid extends React.Component<Props & FormComponentProps, State> {
         tableData: [],
         notFoundActivator: false,
         result: '',
-        selectedRowKeys: [],
-        loading: false
+        selectedRowKeys: []
     };
 
     handleSearch = (resources : Ecore.Resource[]): void => {
         this.setState({selectedRowKeys: []});
         this.setState({notFoundActivator: true});
         const tableData:Array<any> = this.prepareTableData(resources);
-        const columns:Array<any> = resources.length > 0 ? Object.keys(resources[0].to()).map((attr)=> ({title: attr, dataIndex: attr, key: attr})) : [];
-        this.setState({ resources: resources, tableData: tableData, columns: columns})
+        this.setState({ tableData: tableData });
+        const columns:Array<any> = resources.length > 0 ? this.prepareColumns(resources): [];
+        this.setState({ resources: resources, columns: columns});
     };
+
+    getDataType = (type: string): string => {
+        const stringType: Array<string> = ["Timestamp", "ByteArray", "Password", "Text", "URL", "QName", "EString", "EBoolean", "EMap", "EDiagnosticChain", "JSObject"];
+        const numberType: Array<string> = ["EInt", "EDouble", "EIntegerObject", "EFloatObject", "ELongObject", "EShort", "EFloat", "ELong", "EDoubleObject"];
+        const dateType: Array<string> = ["Date", "EDate"];
+        if (stringType.includes(type)) return "stringType";
+        else if (numberType.includes(type)) return "numberType";
+        else if (dateType.includes(type)) return "dateType";
+        else return "hi, i don`t know this type"
+    };
+
+    sortColumns = (a: any, b: any, name: string, type: string): number => {
+        if (type === "stringType") {
+            if (a[name] !== undefined && b[name] !== undefined) {
+                if (a[name].toLowerCase() < b[name].toLowerCase()) { return -1; }
+                else if(a[name].toLowerCase() > b[name].toLowerCase()) { return 1; }
+                else {return 0}
+            }
+            else if (a[name] === undefined && b[name] !== undefined) {return -1}
+            else if (a[name] !== undefined && b[name] === undefined) {return 1}
+            else {return 0}
+        }
+        else if (type === "numberType") {
+            if (a[name] !== undefined && b[name] !== undefined) {
+                return a[name] - b[name]
+            } else if (a[name] === undefined && b[name] !== undefined) {
+                return 0 - b[name]
+            } else if (a[name] !== undefined && b[name] === undefined) {
+                return a[name] - 0
+            } else {return 0}
+        }
+        else if (type === "dateType") {return 0}
+        else {return 0}
+    };
+
+    filterColumns = (name: string): Array<any> => {
+        const result: Array<any> = [];
+        for (let td of this.state.tableData){
+            if (td[name] !== undefined && result.every((value) => value.text !== td[name])) {
+                result.push({ text: td[name], value: td[name] })
+            }
+        }
+        return result.sort((a: any, b: any) => this.sortColumns(a, b, "text", "stringType"));
+    };
+
+    defaultSortOrder = (name: string): any => {
+        if (name !== undefined && name === 'name') return 'ascend'
+    };
+
+    prepareColumns(resources:Ecore.Resource[]):Array<Ecore.EStructuralFeature>{
+        const AllAttributes:Array<any> = [];
+        resources.forEach((res:Ecore.Resource) => {
+            const attrs:Array<Ecore.EStructuralFeature> = res.get('contents').first().eClass.get('eAllStructuralFeatures');
+            for (let attr of attrs){
+                if (AllAttributes.every((value)=>value.get('name') !== attr.get('name'))) {
+                    AllAttributes.push(attr);
+                }
+            }
+        });
+        const AllColumns:Array<any> = [{title: 'eClass', dataIndex: 'eClass', key: 'eClass', type: 'stringType',
+            sorter: (a: any, b: any) => this.sortColumns(a, b, 'eClass', 'stringType'),
+            filters: this.filterColumns('eClass'),
+            onFilter: (value: any, record: any) => record.eClass === value
+        }];
+
+        for (let column of AllAttributes){
+            const name: string = column.get('name');
+            const type: string = column.get('eType').eClass.get('name') === 'EDataType' ? this.getDataType(column.get('eType').get('name')) : "stringType";
+            AllColumns.push({title: name, dataIndex: name, key: name, type: type,
+                sorter: (a: any, b: any) => this.sortColumns(a, b, name, type),
+                defaultSortOrder: this.defaultSortOrder(name),
+                filters: this.filterColumns(name),
+                onFilter: (value: any, record: any) => record.name === value
+            })
+        }
+        return AllColumns;
+    }
 
     prepareTableData(resources:Ecore.Resource[]):Array<any>{
         const prepared:Array<any> = [];
         resources.forEach((res:Ecore.Resource) => {
-            prepared.push({...res.to(), resource: res})
+            if (res.to().length === undefined) {
+                prepared.push({...res.to(), resource: res})
+            }
         });
         prepared.map((res:any, idx) => {
             res["key"] = idx;
-            forEach(res, (val,key)=>{
-                if(typeof val === "object" && key !== "resource") {
-                    res[key] = JSON.stringify(val)
-                }
-            });
+                forEach(res, (val,key)=>{
+                    if(typeof val === "object" && key !== "resource") {
+                        res[key] = JSON.stringify(val)
+                    }
+                });
             return res
         });
         return prepared
@@ -106,14 +184,16 @@ class SearchGrid extends React.Component<Props & FormComponentProps, State> {
         return (
          <Form style={{padding: '20px'}}>
              <FormItem>
-                 <WrappedDataSearch onSearch={this.handleSearch} specialEClass={this.props.specialEClass != '' ? this.props.specialEClass : ''}/>
+                 <WrappedDataSearch onSearch={this.handleSearch}
+                                    specialEClass={this.props.specialEClass !== undefined ? this.props.specialEClass : undefined}
+                 />
              </FormItem>
              <FormItem>
                  {this.state.resources.length === 0
                      ?
                      !this.state.notFoundActivator ? '' : 'Not found'
                      :
-                     this.props.onSelect != undefined
+                     this.props.onSelect !== undefined
                          ?
                          <div>
                              <FormItem>

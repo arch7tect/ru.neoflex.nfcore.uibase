@@ -13,7 +13,7 @@ import 'brace/theme/tomorrow';
 
 interface Props {
     onSearch: (resources: Ecore.Resource[]) => void;
-    specialEClass?: string;
+    specialEClass?: Ecore.EClass | undefined;
 }
 
 interface State {
@@ -29,7 +29,12 @@ class DataSearch extends React.Component<Props & FormComponentProps, State> {
         e.preventDefault();
         this.props.form.validateFields((err: any, values: any) => {
             if (!err) {
-                let selectedClassObject: Ecore.EObject | undefined = this.state.classes.find((c: Ecore.EObject) => c.get('name') === values.selectEClass);
+                let selectedClassObject: Ecore.EClass | undefined;
+                if (this.props.specialEClass === undefined ) {
+                    selectedClassObject = this.state.classes.find((c: Ecore.EClass) => c.get('name') === values.selectEClass);
+                } else {
+                    selectedClassObject = this.props.specialEClass
+                }
                 values.key === 'json_search'
                     ?
                     API.instance().find(JSON.parse(values.json_field)).then(results => {
@@ -74,7 +79,9 @@ class DataSearch extends React.Component<Props & FormComponentProps, State> {
                         <TabPane tab='Data Search' key='data_search'>
                             <FormItem>
                                 {getFieldDecorator('selectEClass', {
-                                    initialValue: !!this.props.specialEClass ? this.props.specialEClass : undefined,
+                                    initialValue: this.props.specialEClass === undefined
+                                        ? undefined :
+                                        this.props.specialEClass.eContainer.get('name') + ": " + this.props.specialEClass.get('name'),
                                     rules: [{
                                         required: getFieldValue('key') === 'data_search',
                                         message: 'Please select eClass',
@@ -84,10 +91,12 @@ class DataSearch extends React.Component<Props & FormComponentProps, State> {
                                         disabled={!!this.props.specialEClass}
                                         style={{width: '270px'}}
                                         autoFocus>
-                                        {this.state.classes.map((c: Ecore.EObject, i: Number) =>
+                                        {
+                                            this.state.classes.map((c: Ecore.EObject, i: Number) =>
                                             <Option value={c.get('name')} key={`${i}${c.get('name')}`}>
                                                 {`${c.eContainer.get('name')}: ${c.get('name')}`}
-                                            </Option>)}
+                                            </Option>)
+                                        }
                                     </Select>
                                 )}
                             </FormItem>
@@ -113,7 +122,7 @@ class DataSearch extends React.Component<Props & FormComponentProps, State> {
                             <Form.Item>
                                 {getFieldDecorator('json_field', {
                                     initialValue: JSON.stringify({
-                                    contents: {eClass: "ru.neoflex.nfcore.base.auth#//" + (this.props.specialEClass || "User")}}, null, 4),
+                                        contents: {eClass: !!this.props.specialEClass ? this.props.specialEClass.eURI() : "ru.neoflex.nfcore.base.auth#//User"}}, null, 4),
                                     rules: [{
                                         required: getFieldValue('key') === 'json_search',
                                         message: 'Please enter json'
@@ -121,7 +130,6 @@ class DataSearch extends React.Component<Props & FormComponentProps, State> {
                                 })(
                                     <div>
                                     <AceEditor
-                                        readOnly={!!this.props.specialEClass}
                                         ref={"aceEditor"}
                                         mode={"json"}
                                         width={"100%"}
