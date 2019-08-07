@@ -31,7 +31,7 @@ class DataSearch extends React.Component<Props & FormComponentProps, State> {
             if (!err) {
                 let selectedClassObject: Ecore.EClass | undefined;
                 if (this.props.specialEClass === undefined ) {
-                    selectedClassObject = this.state.classes.find((c: Ecore.EClass) => c.get('name') === values.selectEClass);
+                    selectedClassObject = this.state.classes.find((c: Ecore.EClass) => c.eContainer.get('name') + "." + c.get('name') === values.selectEClass);
                 } else {
                     selectedClassObject = this.props.specialEClass
                 }
@@ -81,20 +81,21 @@ class DataSearch extends React.Component<Props & FormComponentProps, State> {
                                 {getFieldDecorator('selectEClass', {
                                     initialValue: this.props.specialEClass === undefined
                                         ? undefined :
-                                        this.props.specialEClass.eContainer.get('name') + ": " + this.props.specialEClass.get('name'),
+                                        this.props.specialEClass.eContainer.get('name') + "." + this.props.specialEClass.get('name'),
                                     rules: [{
                                         required: getFieldValue('key') === 'data_search',
                                         message: 'Please select eClass',
                                     }],
                                 })(
                                     <Select
+                                        mode="combobox"
                                         disabled={!!this.props.specialEClass}
                                         style={{width: '270px'}}
                                         autoFocus>
                                         {
                                             this.state.classes.map((c: Ecore.EObject, i: Number) =>
-                                            <Option value={c.get('name')} key={`${i}${c.get('name')}`}>
-                                                {`${c.eContainer.get('name')}: ${c.get('name')}`}
+                                            <Option value={`${c.eContainer.get('name')}.${c.get('name')}`} key={`${i}${c.get('name')}`}>
+                                                {`${c.eContainer.get('name')}.${c.get('name')}`}
                                             </Option>)
                                         }
                                     </Select>
