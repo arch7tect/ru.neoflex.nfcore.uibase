@@ -285,7 +285,7 @@ export class API implements IErrorHandler {
 
     findByClassURI(classURI: string, selector: any, level: number = 1): Promise<Ecore.Resource[]> {
         let selection: any = {contents: {eClass: classURI}};
-        selection = _.merge(selection, selector);
+        selection = _.merge(selector, selection);
         return this.find(selection, level).then(r=>r.resources);
     }
 
