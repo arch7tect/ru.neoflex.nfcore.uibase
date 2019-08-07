@@ -36,7 +36,9 @@ export class DataBrowser extends React.Component<any, State> {
     prepareTableData(resources:Ecore.Resource[]):Array<any>{
         const prepared:Array<any> = [];
         resources.forEach((res:Ecore.Resource) => {
-            prepared.push({...res.to(), resource: res})
+            if (res.to().length === undefined) {
+                prepared.push({...res.to(), resource: res})
+            }
         });
         prepared.map((res:any, idx) => {
             res["key"] = idx;
