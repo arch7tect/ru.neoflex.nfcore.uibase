@@ -103,7 +103,7 @@ class SearchGrid extends React.Component<Props & FormComponentProps, State> {
         const AllColumns:Array<any> = [{title: 'eClass', dataIndex: 'eClass', key: 'eClass', type: 'stringType',
             sorter: (a: any, b: any) => this.sortColumns(a, b, 'eClass', 'stringType'),
             filters: this.filterColumns('eClass'),
-            onFilter: (value: any, record: any) => record.eClass === value
+            onFilter: (value: any, record: any) => record.eClass.toLowerCase() === value.toLowerCase()
         }];
 
         for (let column of AllAttributes){
@@ -113,7 +113,7 @@ class SearchGrid extends React.Component<Props & FormComponentProps, State> {
                 sorter: (a: any, b: any) => this.sortColumns(a, b, name, type),
                 defaultSortOrder: this.defaultSortOrder(name),
                 filters: this.filterColumns(name),
-                onFilter: (value: any, record: any) => record.name === value
+                onFilter: (value: any, record: any) => record.name.toLowerCase() === value.toLowerCase(),
             })
         }
         return AllColumns;
@@ -128,9 +128,18 @@ class SearchGrid extends React.Component<Props & FormComponentProps, State> {
         });
         prepared.map((res:any, idx) => {
             res["key"] = idx;
+            const maxJsonLength = 50;
                 forEach(res, (val,key)=>{
-                    if(typeof val === "object" && key !== "resource") {
-                        res[key] = JSON.stringify(val)
+                    if (typeof val === "object" && key !== "resource") {
+                        if (JSON.stringify(val).length > maxJsonLength) {
+                            res[key] = JSON.stringify(val).substr(0, maxJsonLength) + "..."
+                        }
+                        else {
+                            res[key] = JSON.stringify(val)
+                        }
+                    }
+                    else if (val.length > maxJsonLength) {
+                        res[key] = val.toString().substr(0, maxJsonLength) + "..."
                     }
                 });
             return res
@@ -180,7 +189,6 @@ class SearchGrid extends React.Component<Props & FormComponentProps, State> {
             onChange: this.onSelectChange,
         };
         const hasSelected = selectedRowKeys.length > 0;
-
         return (
          <Form style={{padding: '20px'}}>
              <FormItem>

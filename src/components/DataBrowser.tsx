@@ -42,9 +42,18 @@ export class DataBrowser extends React.Component<any, State> {
         });
         prepared.map((res:any, idx) => {
             res["key"] = idx;
+            const maxJsonLength = 50;
             forEach(res, (val,key)=>{
-                if(typeof val === "object" && key !== "resource") {
-                    res[key] = JSON.stringify(val)
+                if (typeof val === "object" && key !== "resource") {
+                    if (JSON.stringify(val).length > maxJsonLength) {
+                        res[key] = JSON.stringify(val).substr(0, maxJsonLength) + "..."
+                    }
+                    else {
+                        res[key] = JSON.stringify(val)
+                    }
+                }
+                else if (val.length > maxJsonLength) {
+                    res[key] = val.toString().substr(0, maxJsonLength) + "..."
                 }
             });
             return res
