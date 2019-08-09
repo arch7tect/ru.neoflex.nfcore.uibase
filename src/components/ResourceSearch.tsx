@@ -1,6 +1,6 @@
 import * as React from "react";
 import {Button, Table} from 'antd';
-import {Ecore} from "ecore";
+import Ecore from "ecore";
 import forEach from "lodash/forEach"
 import {WrappedDataSearch} from "./DataSearch";
 import Form from "antd/es/form";
