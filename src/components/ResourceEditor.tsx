@@ -1,8 +1,7 @@
 import * as React from "react";
 import { Tree, Icon, Table, Modal, Button, Select, Row, Col } from 'antd';
 import Ecore from "ecore";
-import { API } from "../modules/api";//import SplitPane from 'react-split-pane';
-//import Pane from 'react-split-pane/lib/Pane';
+import { API } from "../modules/api";
 import Splitter from './CustomSplitter'
 import update from 'immutability-helper';
 //import { any } from "prop-types";
@@ -207,31 +206,32 @@ export class ResourceEditor extends React.Component<any, State> {
 
     prepareTableData(targetObject: ITargetObject, resource: Ecore.EObject): Array<any> {
 
-        const prepareValue = (eObject: Ecore.EObject, value: any): any => {
+        const prepareValue = (eObject: Ecore.EObject, value: any, idx:Number): any => {
 
             //resource.eContainer.getEObject(targetObject._id).eClass.get('eAllStructuralFeatures')[1].get('eType').get('name')
 
             if (eObject.isKindOf('EReference')) {
                 const elements = value ? value.map((el: Object, idx: number) => <React.Fragment key={idx}>{JSON.stringify(el)}<br /></React.Fragment>) : []
-                const component = <React.Fragment>
+                const component = <React.Fragment key={eObject.get('name')+"_browser" + idx}>
                     {elements}
-                    <Button onClick={()=>this.setState({ modalVisible: true })}>...</Button>
+                    <Button key={eObject.get('name')+"_browser" + idx} onClick={()=>this.setState({ modalVisible: true })}>...</Button>
                 </React.Fragment>;
                 return component
             } else if (eObject.get('eType').isKindOf('EDataType') && eObject.get('eType').get('name') === "EBoolean") {
-                return <Select style={{ width: "300px" }} onChange={(newValue: Object) => {
-                        const updatedJSON = targetObject.updater(newValue);
+                return <Select key={"_select" + idx} style={{ width: "300px" }} onChange={(newValue: any) => {
+                        const updatedJSON = targetObject.updater({ [eObject.get('name')]: newValue });
                         const nestedJSON = this.nestUpdaters(updatedJSON, null);
                         const object = this.findObjectById(nestedJSON, targetObject._id);
                         const preparedData = this.prepareTableData(object, this.state.resource);
                         this.setState({ resourceJSON: nestedJSON, tableData: preparedData })
                     }}>
-                        <Select.Option value={undefined}>Null</Select.Option>
-                        <Select.Option value={"true"}>True</Select.Option>
-                        <Select.Option value={"false"}>False</Select.Option>
+                        <Select.Option key={eObject.get('name')+"_select_null" + idx} value={undefined}>Null</Select.Option>
+                        <Select.Option key={eObject.get('name')+"_select_true" + idx} value={"true"}>True</Select.Option>
+                        <Select.Option key={eObject.get('name')+"_select_false" + idx} value={"false"}>False</Select.Option>
                 </Select>
             } else {
                 return <EditableTextArea
+                    key={eObject.get('name')+"_textarea" + idx}
                     editedProperty={eObject.get('name')}
                     value={value}
                     onChange={(newValue: Object) => {
@@ -264,14 +264,17 @@ export class ResourceEditor extends React.Component<any, State> {
                     }}
                 />
             }*/
-        };
+        }
 
         const preparedData:Array<Object> = [];
         const featureList = resource.eContainer.getEObject(targetObject._id).eClass.get('eAllStructuralFeatures')
         featureList.forEach((feature: Ecore.EObject, idx: Number) => {
             const isContainment = Boolean(feature.get('containment'));
-            if(!isContainment) preparedData.push({ property: feature.get('name'), value: prepareValue(feature, targetObject[feature.get('name')]), key: feature.get('name') + idx })
-        });
+            if(!isContainment) preparedData.push({ 
+                property: feature.get('name'), 
+                value: prepareValue(feature, targetObject[feature.get('name')], idx), 
+                key: feature.get('name') + idx })
+        })
 
         return preparedData
     }
@@ -288,6 +291,10 @@ export class ResourceEditor extends React.Component<any, State> {
         this.setState({ rightClickMenuVisible: false })
     };
 
+    handleSelect = (resources : Ecore.Resource[]): void => {
+        this.setState({ modalVisible: false })
+    };
+
     componentWillUnmount() {
         window.removeEventListener("click", this.hideRightClickMenu)
     }
@@ -301,10 +308,6 @@ export class ResourceEditor extends React.Component<any, State> {
         this.getResource();
         window.addEventListener("click", this.hideRightClickMenu)
     }
-
-    handleSelect = (resources : Ecore.Resource[]): void => {
-        this.setState({ modalVisible: false })
-    };
 
     render() {
         return (

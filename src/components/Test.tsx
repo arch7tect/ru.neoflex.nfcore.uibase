@@ -2,7 +2,7 @@ import * as React from "react";
 import {Checkbox, Form} from 'antd';
 import FormItem from "antd/es/form/FormItem";
 import {WrappedSearchGrid} from "./SearchGrid";
-import {Ecore} from "ecore";
+import Ecore from "ecore";
 import {API} from "../modules/api";
 
 interface Props {
