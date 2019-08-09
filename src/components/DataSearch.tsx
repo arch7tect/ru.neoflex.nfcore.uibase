@@ -57,10 +57,17 @@ class DataSearch extends React.Component<Props & FormComponentProps, State> {
 
     getEClasses(): void {
             API.instance().fetchAllClasses(false).then(classes => {
-            const filtered = classes.filter((c: Ecore.EObject) => !c.get('interface'));
+            const filtered = classes.filter((c: Ecore.EObject) => !c.get('interface'))
+                .sort((a: any, b: any) => this.sortEClasses(a, b));
             this.setState({classes: filtered})
         })
     }
+
+    sortEClasses = (a: any, b: any): number  => {
+        if (a._id < b._id) { return -1 }
+        else if(a._id > b._id) { return 1 }
+        else {return 0}
+    };
 
     componentDidMount(): void {
         this.getEClasses()
@@ -88,10 +95,13 @@ class DataSearch extends React.Component<Props & FormComponentProps, State> {
                                     }],
                                 })(
                                     <Select
-                                        mode="combobox"
+                                        notFoundContent="Not found"
+                                        allowClear={true}
+                                        showSearch={true}
                                         disabled={!!this.props.specialEClass}
                                         style={{width: '270px'}}
-                                        autoFocus>
+                                        autoFocus
+                                        placeholder="EClass">
                                         {
                                             this.state.classes.map((c: Ecore.EObject, i: Number) =>
                                             <Option value={`${c.eContainer.get('name')}.${c.get('name')}`} key={`${i}${c.get('name')}`}>
