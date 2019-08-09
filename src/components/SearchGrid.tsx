@@ -1,5 +1,5 @@
 import * as React from "react";
-import {Button, Form, Icon, Table} from 'antd';
+import {Button, Form, Icon, Input, Select, Table} from 'antd';
 import {Ecore} from "ecore";
 import {API} from "../modules/api";
 import {Link} from "react-router-dom";
@@ -7,6 +7,8 @@ import forEach from "lodash/forEach"
 import {FormComponentProps} from "antd/lib/form";
 import {WrappedDataSearch} from "./DataSearch";
 import FormItem from "antd/es/form/FormItem";
+import {ColumnFilterItem, FilterDropdownProps} from "antd/lib/table";
+import {truncate} from "fs";
 
 interface Props {
     onSelect?: (resources: Ecore.Resource[]) => void;
@@ -21,16 +23,19 @@ interface State {
     notFoundActivator: boolean;
     result: string;
     selectedRowKeys: any[];
+    searchText: string;
 }
 
-class SearchGrid extends React.Component<Props & FormComponentProps, State> {
+class SearchGrid extends React.Component<Props & FormComponentProps & FilterDropdownProps, State> {
+
     state = {
-        resources: [], 
+        resources: [],
         columns: [],
         tableData: [],
         notFoundActivator: false,
         result: '',
-        selectedRowKeys: []
+        selectedRowKeys: [],
+        searchText: ""
     };
 
     handleSearch = (resources : Ecore.Resource[]): void => {
@@ -38,9 +43,60 @@ class SearchGrid extends React.Component<Props & FormComponentProps, State> {
         this.setState({notFoundActivator: true});
         const tableData:Array<any> = this.prepareTableData(resources);
         this.setState({ tableData: tableData });
-        const columns:Array<any> = resources.length > 0 ? this.prepareColumns(resources): [];
+        const columns:Array<Ecore.EStructuralFeature> = resources.length > 0 ? this.prepareColumns(resources): [];
         this.setState({ resources: resources, columns: columns});
     };
+
+    prepareColumns(resources:Ecore.Resource[]):Array<Ecore.EStructuralFeature>{
+        const AllFeatures:Array<Ecore.EStructuralFeature> = [];
+        resources.forEach((res:Ecore.Resource) => {
+            const attrs:Array<Ecore.EStructuralFeature> = res.get('contents').first().eClass.get('eAllStructuralFeatures');
+            for (let attr of attrs){
+                if (AllFeatures.every((value)=>value.get('name') !== attr.get('name'))) {
+                    AllFeatures.push(attr);
+                }
+            }
+        });
+        const AllColumns:Array<any> = [{title: 'eClass', dataIndex: 'eClass', key: 'eClass', type: 'stringType',
+            sorter: (a: any, b: any) => this.sortColumns(a, b, 'eClass', 'stringType'),
+            // ...this.getColumnSearchProps('eClass')
+            filters: this.filterColumns('eClass'),
+            onFilter: (value: any, record: any) => record.eClass.toLowerCase() === value.toLowerCase()
+
+        }];
+        for (let column of AllFeatures){
+            const name: string = column.get('name');
+            const type: string = column.get('eType').eClass.get('name') === 'EDataType' ? this.getDataType(column.get('eType').get('name')) : "stringType";
+            AllColumns.push({title: name, dataIndex: name, key: name, type: type,
+                sorter: (a: any, b: any) => this.sortColumns(a, b, name, type),
+                defaultSortOrder: this.defaultSortOrder(name),
+                ...this.getColumnSearchProps(name),
+                filters: this.filterColumns(name),
+                // onFilter: (value: any, record: any) => record.name.toLowerCase() === value.toLowerCase(),
+            })
+        }
+        return AllColumns;
+    }
+
+    prepareTableData(resources:Ecore.Resource[]): Array<Ecore.EStructuralFeature>{
+        const prepared: Array<Ecore.EStructuralFeature> = [];
+        resources.forEach((res: Ecore.Resource) => {
+            if (res.to().length === undefined) {
+                prepared.push({...res.to(), resource: res});
+            }
+        });
+        prepared.map((res:any, idx) => {
+            res["key"] = idx;
+            forEach(res, (val,key)=>{
+                if (typeof val === "object" && key !== "resource") {
+                    const maxJsonLength = JSON.stringify(val).indexOf('#') + 1;
+                    res[key] = JSON.stringify(val).substr(0, maxJsonLength) + "..."
+                }
+            });
+            return res
+        });
+        return prepared
+    }
 
     getDataType = (type: string): string => {
         const stringType: Array<string> = ["Timestamp", "ByteArray", "Password", "Text", "URL", "QName", "EString", "EBoolean", "EMap", "EDiagnosticChain", "JSObject"];
@@ -90,63 +146,6 @@ class SearchGrid extends React.Component<Props & FormComponentProps, State> {
         if (name !== undefined && name === 'name') return 'ascend'
     };
 
-    prepareColumns(resources:Ecore.Resource[]):Array<Ecore.EStructuralFeature>{
-        const AllAttributes:Array<any> = [];
-        resources.forEach((res:Ecore.Resource) => {
-            const attrs:Array<Ecore.EStructuralFeature> = res.get('contents').first().eClass.get('eAllStructuralFeatures');
-            for (let attr of attrs){
-                if (AllAttributes.every((value)=>value.get('name') !== attr.get('name'))) {
-                    AllAttributes.push(attr);
-                }
-            }
-        });
-        const AllColumns:Array<any> = [{title: 'eClass', dataIndex: 'eClass', key: 'eClass', type: 'stringType',
-            sorter: (a: any, b: any) => this.sortColumns(a, b, 'eClass', 'stringType'),
-            filters: this.filterColumns('eClass'),
-            onFilter: (value: any, record: any) => record.eClass.toLowerCase() === value.toLowerCase()
-        }];
-
-        for (let column of AllAttributes){
-            const name: string = column.get('name');
-            const type: string = column.get('eType').eClass.get('name') === 'EDataType' ? this.getDataType(column.get('eType').get('name')) : "stringType";
-            AllColumns.push({title: name, dataIndex: name, key: name, type: type,
-                sorter: (a: any, b: any) => this.sortColumns(a, b, name, type),
-                defaultSortOrder: this.defaultSortOrder(name),
-                filters: this.filterColumns(name),
-                onFilter: (value: any, record: any) => record.name.toLowerCase() === value.toLowerCase(),
-            })
-        }
-        return AllColumns;
-    }
-
-    prepareTableData(resources:Ecore.Resource[]):Array<any>{
-        const prepared:Array<any> = [];
-        resources.forEach((res:Ecore.Resource) => {
-            if (res.to().length === undefined) {
-                prepared.push({...res.to(), resource: res})
-            }
-        });
-        prepared.map((res:any, idx) => {
-            res["key"] = idx;
-            const maxJsonLength = 50;
-                forEach(res, (val,key)=>{
-                    if (typeof val === "object" && key !== "resource") {
-                        if (JSON.stringify(val).length > maxJsonLength) {
-                            res[key] = JSON.stringify(val).substr(0, maxJsonLength) + "..."
-                        }
-                        else {
-                            res[key] = JSON.stringify(val)
-                        }
-                    }
-                    else if (val.length > maxJsonLength) {
-                        res[key] = val.toString().substr(0, maxJsonLength) + "..."
-                    }
-                });
-            return res
-        });
-        return prepared
-    }
-
     handleSelect = () => {
         if (this.props.onSelect) {
             this.props.onSelect(
@@ -165,6 +164,90 @@ class SearchGrid extends React.Component<Props & FormComponentProps, State> {
 
     onSelectChange = (selectedRowKeys: any) => {
         this.setState({ selectedRowKeys });
+    };
+
+    //for FilterMenu
+    getColumnSearchProps = (name: any) => ({
+        filterDropdown: (props: {
+            setSelectedKeys: (selectedKeys: string[]) => void,
+            selectedKeys: string[],
+            confirm: () => void,
+            clearFilters: () => void,
+            filters: ColumnFilterItem[],
+        }) => (
+
+                <Form style={{ padding: 8 }}>
+{/*                    <Select
+                        placeholder={`Search ${name}`}
+                        defaultValue={props.selectedKeys[0]}
+                        // onChange={e =>
+                        //     props.setSelectedKeys(e.target.value ? [e.target.value] : [])
+                        // }
+                        onChange={() => this.handleSearchFilterDropdown(props.selectedKeys, props.confirm)}
+                        style={{ width: 188, marginBottom: 8, display: "block" }}
+                        // defaultChecked={true}
+                    >
+                        {
+                            this.filterColumns(name).map((c: any, i: Number) =>
+                                <Option/>)
+                        }*/}
+    {/*                    {
+                            this.filterColumns(name)
+                        }*/}
+                    {/*</Select>*/}
+
+                    {/*filters: this.filterColumns(name)*/}
+
+                        <Input
+                            placeholder={`Search ${name}`}
+                            value={props.selectedKeys[0]}
+                            onChange={e =>
+                                props.setSelectedKeys(e.target.value ? [e.target.value] : [])
+                            }
+                            onPressEnter={() => this.handleSearchFilterDropdown(props.selectedKeys, props.confirm)}
+                            style={{ width: 188, marginBottom: 8, display: "block" }}
+                            defaultChecked={true}
+                        />
+                        <Button
+                            type="primary"
+                            onClick={() => this.handleSearchFilterDropdown(props.selectedKeys, props.confirm)}
+                            icon="search"
+                            size="small"
+                            style={{ width: 90, marginRight: 8 }}
+                        />
+                        <Button
+                            onClick={() => this.handleResetFilterDropdown(props.clearFilters)}
+                            size="small"
+                            style={{ width: 90 }}
+                            icon="rest"
+                        />
+                </Form>
+        ),
+
+        filterIcon: (filtered: any) => (
+            <Icon type="search" style={{ color: filtered ? "#1890ff" : undefined }} />
+        ),
+
+        onFilter: (value: string, record: string) =>
+
+            record[name] !== undefined
+        ?
+            record[name].toLowerCase().includes(value.toLowerCase())
+                :
+                false
+
+        // record[name].toString().toLowerCase() === value.toLowerCase()
+
+    });
+
+    handleSearchFilterDropdown = (selectedKeys: string[], confirm: () => void) => {
+        confirm();
+        this.setState({ searchText: selectedKeys[0] });
+    };
+
+    handleResetFilterDropdown = (clearFilters: () => void) => {
+        clearFilters();
+        this.setState({ searchText: "" });
     };
 
     render() {
@@ -228,4 +311,4 @@ class SearchGrid extends React.Component<Props & FormComponentProps, State> {
         );
     }}
 
-export const WrappedSearchGrid = Form.create<Props & FormComponentProps>()(SearchGrid);
+export const WrappedSearchGrid = Form.create<Props & FormComponentProps & FilterDropdownProps>()(SearchGrid);
