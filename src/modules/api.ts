@@ -105,15 +105,17 @@ export class API implements IErrorHandler {
         });
     }
 
-    static collectReferences(object: any, found: string[]): string[] {
+    static collectReferences(object: any, found: Set<string>): Set<string> {
         if (!object || typeof object !== 'object') {
             return found;
         }
         let ref = object.$ref;
         if (ref) {
             let {id, fragment} = API.parseRef(ref);
-            object.$ref = id + '#' + fragment;
-            found.push(object.$ref);
+            if (id) {
+                object.$ref = id + '#' + fragment;
+                found.add(object.$ref);
+            }
         }
         for (var i in object) {
             if (object.hasOwnProperty(i)) {
@@ -124,11 +126,20 @@ export class API implements IErrorHandler {
     }
 
     static parseRef(ref: string): any {
-        let [resid, fragment] = ref.split('#', 2);
+        let id: string|undefined, query: string|undefined, resid: string|undefined, fragment: string|undefined;
+        [resid, fragment] = ref.split('#', 2);
         if (!fragment) {
-            fragment = '/';
+            if (resid.startsWith("/")) {
+                fragment = resid
+                resid = undefined
+                }
+            else {
+                fragment = '/';
+            }
         }
-        let [id, query] = resid.split('?', 2);
+        if (resid) {
+            [id, query] = resid.split('?', 2);
+        }
         let rev = query && query.startsWith("rev=") ? query.substring(4) : undefined;
         return {id, rev, fragment, query, resid};
     }
@@ -180,7 +191,7 @@ export class API implements IErrorHandler {
     private loadEObjectWithRefs(level: number, jsonObject: any, resourceSet: Ecore.ResourceSet, loading: any, uri: string): Promise<Ecore.Resource> {
         let refEObjects: Promise<any>[] = []
         if (level > 0) {
-            let refs = API.collectReferences(jsonObject, []);
+            let refs = Array.from(API.collectReferences(jsonObject, new Set<string>()).values());
             refEObjects = refs.map(ref => {
                 return this.fetchResource(ref, level - 1, resourceSet, loading);
             })
