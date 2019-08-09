@@ -1,5 +1,6 @@
 import * as React from "react";
-import {Button, Form, Icon, Table} from 'antd';
+import {Button, Form, Icon, Input, Table} from 'antd';
+// @ts-ignore
 import {Ecore} from "ecore";
 import {API} from "../modules/api";
 import {Link} from "react-router-dom";
@@ -8,7 +9,6 @@ import {FormComponentProps} from "antd/lib/form";
 import {WrappedDataSearch} from "./DataSearch";
 import FormItem from "antd/es/form/FormItem";
 import {ColumnFilterItem, FilterDropdownProps} from "antd/lib/table";
-import {truncate} from "fs";
 
 interface Props {
     onSelect?: (resources: Ecore.Resource[]) => void;
