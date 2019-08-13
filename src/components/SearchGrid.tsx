@@ -1,14 +1,13 @@
 import * as React from "react";
 import {Button, Form, Icon, Input, Table} from 'antd';
-// @ts-ignore
-import {Ecore} from "ecore";
+import Ecore from "ecore";
 import {API} from "../modules/api";
 import {Link} from "react-router-dom";
 import forEach from "lodash/forEach"
 import {FormComponentProps} from "antd/lib/form";
 import {WrappedDataSearch} from "./DataSearch";
 import FormItem from "antd/es/form/FormItem";
-import {ColumnFilterItem, FilterDropdownProps} from "antd/lib/table";
+import {FilterDropdownProps} from "antd/lib/table";
 
 interface Props {
     onSelect?: (resources: Ecore.Resource[]) => void;
@@ -40,11 +39,11 @@ class SearchGrid extends React.Component<Props & FormComponentProps & FilterDrop
 
     handleSearch = (resources : Ecore.Resource[]): void => {
         this.setState({selectedRowKeys: []});
-        this.setState({notFoundActivator: true});
         const tableData:Array<any> = this.prepareTableData(resources);
         this.setState({ tableData: tableData });
         const columns:Array<Ecore.EStructuralFeature> = resources.length > 0 ? this.prepareColumns(resources): [];
         this.setState({ resources: resources, columns: columns});
+        this.setState({notFoundActivator: true});
     };
 
     prepareColumns(resources:Ecore.Resource[]):Array<Ecore.EStructuralFeature>{
@@ -65,13 +64,18 @@ class SearchGrid extends React.Component<Props & FormComponentProps & FilterDrop
 
         }];
         for (let column of AllFeatures){
-            const name: string = column.get('name');
-            const type: string = column.get('eType').eClass.get('name') === 'EDataType' ? this.getDataType(column.get('eType').get('name')) : "stringType";
+            let name: string = "";
+            column.get('name') === "children" ? name = "_children" : name = column.get('name');
+            const type: string = !!column.get('eType') && column.get('eType').eClass.get('name') === 'EDataType' ? this.getDataType(column.get('eType').get('name')) : "stringType";
             AllColumns.push({title: name, dataIndex: name, key: name, type: type,
                 sorter: (a: any, b: any) => this.sortColumns(a, b, name, type),
-                defaultSortOrder: this.defaultSortOrder(name),
+                render: (text: any) => {
+                if (text !== undefined && column.get('eType').eClass.get('name') !== 'EDataType') {
+                        const maxJsonLength = text.indexOf('#') + 1;
+                        return text.slice(0, maxJsonLength) + "..." }
+                else {return text}},
                 ...this.getColumnSearchProps(name),
-                filters: this.filterColumns(name),
+                // filters: this.filterColumns(name),
                 // onFilter: (value: any, record: any) => record.name.toLowerCase() === value.toLowerCase(),
             })
         }
@@ -82,15 +86,19 @@ class SearchGrid extends React.Component<Props & FormComponentProps & FilterDrop
         const prepared: Array<Ecore.EStructuralFeature> = [];
         resources.forEach((res: Ecore.Resource) => {
             if (res.to().length === undefined) {
-                prepared.push({...res.to(), resource: res});
+                const row = {...res.to(), resource: res};
+                if (row.hasOwnProperty("children")) {
+                    row["_children"] = row["children"];
+                    delete row["children"]
+                }
+                prepared.push(row);
             }
         });
         prepared.map((res:any, idx) => {
             res["key"] = idx;
             forEach(res, (val,key)=>{
                 if (typeof val === "object" && key !== "resource") {
-                    const maxJsonLength = JSON.stringify(val).indexOf('#') + 1;
-                    res[key] = JSON.stringify(val).substr(0, maxJsonLength) + "..."
+                    res[key] = JSON.stringify(val)
                 }
             });
             return res
@@ -109,27 +117,29 @@ class SearchGrid extends React.Component<Props & FormComponentProps & FilterDrop
     };
 
     sortColumns = (a: any, b: any, name: string, type: string): number => {
-        if (type === "stringType") {
-            if (a[name] !== undefined && b[name] !== undefined) {
-                if (a[name].toLowerCase() < b[name].toLowerCase()) { return -1; }
-                else if(a[name].toLowerCase() > b[name].toLowerCase()) { return 1; }
-                else {return 0}
+        if (b !== undefined) {
+            if (type === "stringType") {
+                if (a[name] !== undefined && b[name] !== undefined) {
+                    if (a[name].toLowerCase() < b[name].toLowerCase()) return -1;
+                    else if(a[name].toLowerCase() > b[name].toLowerCase()) return 1;
+                    else return 0;
+                }
+                else if (a[name] === undefined && b[name] !== undefined) return -1;
+                else if (a[name] !== undefined && b[name] === undefined) return 1;
+                else return 0;
             }
-            else if (a[name] === undefined && b[name] !== undefined) {return -1}
-            else if (a[name] !== undefined && b[name] === undefined) {return 1}
-            else {return 0}
-        }
-        else if (type === "numberType") {
-            if (a[name] !== undefined && b[name] !== undefined) {
-                return a[name] - b[name]
-            } else if (a[name] === undefined && b[name] !== undefined) {
-                return 0 - b[name]
-            } else if (a[name] !== undefined && b[name] === undefined) {
-                return a[name] - 0
-            } else {return 0}
-        }
-        else if (type === "dateType") {return 0}
-        else {return 0}
+            else if (type === "numberType") {
+                if (a[name] !== undefined && b[name] !== undefined) {
+                    return a[name] - b[name]
+                }
+                else if (a[name] === undefined && b[name] !== undefined) return -1;
+                else if (a[name] !== undefined && b[name] === undefined) return 1;
+                else return 0;
+            }
+            else if (type === "dateType") return 0;
+            else return 0;
+        } else return 0;
+
     };
 
     filterColumns = (name: string): Array<any> => {
@@ -140,10 +150,6 @@ class SearchGrid extends React.Component<Props & FormComponentProps & FilterDrop
             }
         }
         return result.sort((a: any, b: any) => this.sortColumns(a, b, "text", "stringType"));
-    };
-
-    defaultSortOrder = (name: string): any => {
-        if (name !== undefined && name === 'name') return 'ascend'
     };
 
     handleSelect = () => {
@@ -173,31 +179,9 @@ class SearchGrid extends React.Component<Props & FormComponentProps & FilterDrop
             selectedKeys: string[],
             confirm: () => void,
             clearFilters: () => void,
-            filters: ColumnFilterItem[],
+            // filters: ColumnFilterItem[],
         }) => (
-
                 <Form style={{ padding: 8 }}>
-{/*                    <Select
-                        placeholder={`Search ${name}`}
-                        defaultValue={props.selectedKeys[0]}
-                        // onChange={e =>
-                        //     props.setSelectedKeys(e.target.value ? [e.target.value] : [])
-                        // }
-                        onChange={() => this.handleSearchFilterDropdown(props.selectedKeys, props.confirm)}
-                        style={{ width: 188, marginBottom: 8, display: "block" }}
-                        // defaultChecked={true}
-                    >
-                        {
-                            this.filterColumns(name).map((c: any, i: Number) =>
-                                <Option/>)
-                        }*/}
-    {/*                    {
-                            this.filterColumns(name)
-                        }*/}
-                    {/*</Select>*/}
-
-                    {/*filters: this.filterColumns(name)*/}
-
                         <Input
                             placeholder={`Search ${name}`}
                             value={props.selectedKeys[0]}
@@ -207,6 +191,8 @@ class SearchGrid extends React.Component<Props & FormComponentProps & FilterDrop
                             onPressEnter={() => this.handleSearchFilterDropdown(props.selectedKeys, props.confirm)}
                             style={{ width: 188, marginBottom: 8, display: "block" }}
                             defaultChecked={true}
+                        />
+                        <Table
                         />
                         <Button
                             type="primary"
@@ -229,14 +215,7 @@ class SearchGrid extends React.Component<Props & FormComponentProps & FilterDrop
         ),
 
         onFilter: (value: string, record: string) =>
-
-            record[name] !== undefined
-        ?
-            record[name].toLowerCase().includes(value.toLowerCase())
-                :
-                false
-
-        // record[name].toString().toLowerCase() === value.toLowerCase()
+            record[name] !== undefined ? record[name].toLowerCase().includes(value.toLowerCase()) : false
 
     });
 
@@ -296,6 +275,7 @@ class SearchGrid extends React.Component<Props & FormComponentProps & FilterDrop
                                  scroll={{x: 1300}}
                                  columns={this.props.showAction ? columns.concat(actionColumnDef) : columns}
                                  dataSource={this.state.tableData}
+                                 bordered={true}
                                  rowSelection={rowSelection}
                              />
                          </div>
@@ -304,6 +284,7 @@ class SearchGrid extends React.Component<Props & FormComponentProps & FilterDrop
                              scroll={{x: 1300}}
                              columns={this.props.showAction ? columns.concat(actionColumnDef) : columns}
                              dataSource={this.state.tableData}
+                             bordered={true}
                          />
                  }
              </FormItem>
