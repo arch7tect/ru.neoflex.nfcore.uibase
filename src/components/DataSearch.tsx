@@ -10,6 +10,7 @@ import {FormComponentProps} from 'antd/lib/form/Form';
 import Checkbox from "antd/lib/checkbox";
 import AceEditor from "react-ace";
 import 'brace/theme/tomorrow';
+import ponyCat from '../ponyCat.png';
 
 interface Props {
     onSearch: (resources: Ecore.Resource[]) => void;
@@ -18,17 +19,20 @@ interface Props {
 
 interface State {
     classes: Ecore.EObject[];
+    indicatorError: boolean;
 }
 
 class DataSearch extends React.Component<Props & FormComponentProps, State> {
     state = {
-        classes: []
+        classes: [],
+        indicatorError: false
     };
 
     handleSubmit = (e: any) => {
         e.preventDefault();
         this.props.form.validateFields((err: any, values: any) => {
             if (!err) {
+                this.setState({indicatorError: false});
                 let selectedClassObject: Ecore.EClass | undefined;
                 if (this.props.specialEClass === undefined ) {
                     selectedClassObject = this.state.classes.find((c: Ecore.EClass) => c.eContainer.get('name') + "." + c.get('name') === values.selectEClass);
@@ -52,6 +56,7 @@ class DataSearch extends React.Component<Props & FormComponentProps, State> {
                             .then((resources) => {
                                 this.props.onSearch(resources)
                             }))}
+            else this.setState({indicatorError: true})
         });
     };
 
@@ -128,6 +133,11 @@ class DataSearch extends React.Component<Props & FormComponentProps, State> {
                                     <Checkbox style={{marginLeft: '10px'}}>Regular expression</Checkbox>
                                 )}
                             </FormItem>
+                            {this.state.indicatorError ?
+                                <img alt="..." src={ponyCat} className="error" />
+                                :
+                                undefined
+                            }
                         </TabPane>
                         <TabPane tab='Json Search' key='json_search'>
                             <Form.Item>

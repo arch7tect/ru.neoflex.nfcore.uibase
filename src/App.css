@@ -60,6 +60,15 @@
   margin-right: 30vh;
 }
 
+/*Design for img ERROR*/
+.error {
+  width: 73px;
+  height: 98px;
+  margin-left: -104px;
+  margin-top: -91px;
+
+}
+
 /*Design filds for login and password*/
 .input-border {
   border: none;

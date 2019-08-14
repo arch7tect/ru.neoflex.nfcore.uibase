@@ -1,5 +1,5 @@
 import * as React from "react";
-import {Button, Form, Icon, Input, Table} from 'antd';
+import {Button, Form, Icon, Input, Select, Table} from 'antd';
 import Ecore from "ecore";
 import {API} from "../modules/api";
 import {Link} from "react-router-dom";
@@ -7,7 +7,7 @@ import forEach from "lodash/forEach"
 import {FormComponentProps} from "antd/lib/form";
 import {WrappedDataSearch} from "./DataSearch";
 import FormItem from "antd/es/form/FormItem";
-import {FilterDropdownProps} from "antd/lib/table";
+import {ColumnFilterItem, FilterDropdownProps} from "antd/lib/table";
 
 interface Props {
     onSelect?: (resources: Ecore.Resource[]) => void;
@@ -56,13 +56,18 @@ class SearchGrid extends React.Component<Props & FormComponentProps & FilterDrop
                 }
             }
         });
-        const AllColumns:Array<any> = [{title: 'eClass', dataIndex: 'eClass', key: 'eClass', type: 'stringType',
-            sorter: (a: any, b: any) => this.sortColumns(a, b, 'eClass', 'stringType'),
-            // ...this.getColumnSearchProps('eClass')
-            filters: this.filterColumns('eClass'),
-            onFilter: (value: any, record: any) => record.eClass.toLowerCase() === value.toLowerCase()
-
+        let name: string = 'eClass';
+        const type: string = 'stringType';
+        const AllColumns:Array<any> = [{title: name, dataIndex: name, key: name, type: name,
+            sorter: (a: any, b: any) => this.sortColumns(a, b, name, type),
+            // filters: this.filterColumns(name),
+            filters: this.filterColumns(name),
+            onFilter: (value: any, record: any) => record.eClass.toLowerCase() === value.toLowerCase(),
+            // ...this.getColumnSearchProps(name),
         }];
+
+
+
         for (let column of AllFeatures){
             let name: string = "";
             column.get('name') === "children" ? name = "_children" : name = column.get('name');
@@ -129,9 +134,7 @@ class SearchGrid extends React.Component<Props & FormComponentProps & FilterDrop
                 else return 0;
             }
             else if (type === "numberType") {
-                if (a[name] !== undefined && b[name] !== undefined) {
-                    return a[name] - b[name]
-                }
+                if (a[name] !== undefined && b[name] !== undefined) { return a[name] - b[name] }
                 else if (a[name] === undefined && b[name] !== undefined) return -1;
                 else if (a[name] !== undefined && b[name] === undefined) return 1;
                 else return 0;
@@ -139,7 +142,6 @@ class SearchGrid extends React.Component<Props & FormComponentProps & FilterDrop
             else if (type === "dateType") return 0;
             else return 0;
         } else return 0;
-
     };
 
     filterColumns = (name: string): Array<any> => {
@@ -150,6 +152,23 @@ class SearchGrid extends React.Component<Props & FormComponentProps & FilterDrop
             }
         }
         return result.sort((a: any, b: any) => this.sortColumns(a, b, "text", "stringType"));
+    };
+
+    //Добавить поиск по пустому значению
+    filterDataSource = (name: string, searchText: string): Array<any> => {
+        const result: Array<any> = [];
+        for (let td of this.state.tableData){
+            const tdName: string = td[name.toString().toLowerCase()];
+            if (this.state.searchText === "") {
+                if (tdName !== undefined && result.every((value) => value[name] !== tdName)) { result.push(td) }
+            }
+            else {
+                if (tdName !== undefined && result.every((value) => value[name] !== tdName &&
+                    tdName.includes(searchText)
+                )) { result.push(td) }
+            }
+        }
+        return result.sort((a: any, b: any) => this.sortColumns(a, b, name, "stringType"));
     };
 
     handleSelect = () => {
@@ -176,120 +195,128 @@ class SearchGrid extends React.Component<Props & FormComponentProps & FilterDrop
     getColumnSearchProps = (name: any) => ({
         filterDropdown: (props: {
             setSelectedKeys: (selectedKeys: string[]) => void,
-            selectedKeys: string[],
+            selectedKeys: any,
             confirm: () => void,
             clearFilters: () => void,
-            // filters: ColumnFilterItem[],
+            filters: ColumnFilterItem[],
+            filterTableData: any,
+            setFilterTableData: (filterTableData: any[]) => void
         }) => (
-                <Form style={{ padding: 8 }}>
+                <Form style={{ padding: 9 }}>
                         <Input
                             placeholder={`Search ${name}`}
                             value={props.selectedKeys[0]}
-                            onChange={e =>
-                                props.setSelectedKeys(e.target.value ? [e.target.value] : [])
-                            }
+                            onChange={e => props.setSelectedKeys(e.target.value ? [e.target.value] : [])}
+                            // onChange={e => this.filterDataSource(name, e.target.value)}
                             onPressEnter={() => this.handleSearchFilterDropdown(props.selectedKeys, props.confirm)}
                             style={{ width: 188, marginBottom: 8, display: "block" }}
                             defaultChecked={true}
+                            allowClear={true}
                         />
                         <Table
-                        />
-                        <Button
-                            type="primary"
-                            onClick={() => this.handleSearchFilterDropdown(props.selectedKeys, props.confirm)}
-                            icon="search"
-                            size="small"
-                            style={{ width: 90, marginRight: 8 }}
-                        />
-                        <Button
-                            onClick={() => this.handleResetFilterDropdown(props.clearFilters)}
-                            size="small"
-                            style={{ width: 90 }}
-                            icon="rest"
-                        />
-                </Form>
-        ),
+                            size={"small"}
+                            style={{whiteSpace: "pre", maxWidth: "300px", maxHeight: "400px"}}
+                            showHeader={false}
+                            scroll={{x: 200, y: 400}}
+                            columns={[{title: name, dataIndex: name, key: name}]}
+                            dataSource={this.filterDataSource(name, props.selectedKeys[0])}
+                            bordered={true}
+                            />
+                            <Button
+                                type="primary"
+                                onClick={() => this.handleSearchFilterDropdown(props.selectedKeys, props.confirm)}
+                                icon="search"
+                                size="small"
+                                style={{ width: 90, marginRight: 8 }}
+                            />
+                            <Button
+                                onClick={() => this.handleResetFilterDropdown(props.clearFilters)}
+                                size="small"
+                                style={{ width: 90 }}
+                                icon="rest"
+                            />
+                    </Form>
+            ),
 
-        filterIcon: (filtered: any) => (
-            <Icon type="search" style={{ color: filtered ? "#1890ff" : undefined }} />
-        ),
+            filterIcon: (filtered: any) => (
+                <Icon type="search" style={{ color: filtered ? "#1890ff" : undefined }} />
+            ),
 
-        onFilter: (value: string, record: string) =>
-            record[name] !== undefined ? record[name].toLowerCase().includes(value.toLowerCase()) : false
+            onFilter: (value: string, record: string) =>
+                record[name] !== undefined ? record[name].toLowerCase().includes(value.toLowerCase()) : false,
+        });
 
-    });
-
-    handleSearchFilterDropdown = (selectedKeys: string[], confirm: () => void) => {
-        confirm();
-        this.setState({ searchText: selectedKeys[0] });
-    };
-
-    handleResetFilterDropdown = (clearFilters: () => void) => {
-        clearFilters();
-        this.setState({ searchText: "" });
-    };
-
-    render() {
-        const columns:Array<any> = this.state.columns;
-        const actionColumnDef = [{
-            title: 'Action',
-            dataIndex: 'action',
-            key: 'action',
-            fixed: 'right',
-            width: 100,
-            render: (text:string, record:any) => {
-                const editButton = <Link key={`edit${record.key}`} to={`/settings/data/${record.resource.get('uri')}/${record.resource.rev}`}>
-                    <span id="edit">Edit</span>
-                </Link>;
-                const deleteButton = <span id="delete" key={`delete${record.key}`} style={{ marginLeft: 8 }} onClick={(e:any)=>this.handleDeleteResource(e, record)}>Delete</span>;
-                return [editButton, deleteButton]
-            }
-        }];
-        const {selectedRowKeys} = this.state;
-        const rowSelection = {
-            selectedRowKeys,
-            onChange: this.onSelectChange,
+        handleSearchFilterDropdown = (selectedKeys: string[], confirm: () => void) => {
+            confirm();
+            this.setState({ searchText: selectedKeys[0] });
         };
-        const hasSelected = selectedRowKeys.length > 0;
-        return (
-         <Form style={{padding: '20px'}}>
-             <FormItem>
-                 <WrappedDataSearch onSearch={this.handleSearch}
-                                    specialEClass={this.props.specialEClass !== undefined ? this.props.specialEClass : undefined}
-                 />
-             </FormItem>
-             <FormItem>
-                 {this.state.resources.length === 0
-                     ?
-                     !this.state.notFoundActivator ? '' : 'Not found'
-                     :
-                     this.props.onSelect !== undefined
+
+        handleResetFilterDropdown = (clearFilters: () => void) => {
+            clearFilters();
+            this.setState({ searchText: "" });
+        };
+
+        render() {
+            const columns:Array<any> = this.state.columns;
+            const actionColumnDef = [{
+                title: 'Action',
+                dataIndex: 'action',
+                key: 'action',
+                fixed: 'right',
+                width: 100,
+                render: (text:string, record:any) => {
+                    const editButton = <Link key={`edit${record.key}`} to={`/settings/data/${record.resource.get('uri')}/${record.resource.rev}`}>
+                        <span id="edit">Edit</span>
+                    </Link>;
+                    const deleteButton = <span id="delete" key={`delete${record.key}`} style={{ marginLeft: 8 }} onClick={(e:any)=>this.handleDeleteResource(e, record)}>Delete</span>;
+                    return [editButton, deleteButton]
+                }
+            }];
+            const {selectedRowKeys} = this.state;
+            const rowSelection = {
+                selectedRowKeys,
+                onChange: this.onSelectChange,
+            };
+            const hasSelected = selectedRowKeys.length > 0;
+            return (
+             <Form style={{padding: '20px'}}>
+                 <FormItem>
+                     <WrappedDataSearch onSearch={this.handleSearch}
+                                        specialEClass={this.props.specialEClass !== undefined ? this.props.specialEClass : undefined}
+                     />
+                 </FormItem>
+                 <FormItem>
+                     {this.state.resources.length === 0
                          ?
-                         <div>
-                             <FormItem>
-                                 <Button type="primary" onClick={this.handleSelect} disabled={!hasSelected} style={{width: '100px', fontSize: '17px'}}>
-                                     <Icon type="select" />
-                                </Button>
-                             </FormItem>
+                         !this.state.notFoundActivator ? '' : 'Not found'
+                         :
+                         this.props.onSelect !== undefined
+                             ?
+                             <div>
+                                 <FormItem>
+                                     <Button type="primary" onClick={this.handleSelect} disabled={!hasSelected} style={{width: '100px', fontSize: '17px'}}>
+                                         <Icon type="select" />
+                                    </Button>
+                                 </FormItem>
+                                 <Table
+                                     scroll={{x: 1300}}
+                                     columns={this.props.showAction ? columns.concat(actionColumnDef) : columns}
+                                     dataSource={this.state.tableData}
+                                     bordered={true}
+                                     rowSelection={rowSelection}
+                                 />
+                             </div>
+                             :
                              <Table
                                  scroll={{x: 1300}}
                                  columns={this.props.showAction ? columns.concat(actionColumnDef) : columns}
                                  dataSource={this.state.tableData}
                                  bordered={true}
-                                 rowSelection={rowSelection}
                              />
-                         </div>
-                         :
-                         <Table
-                             scroll={{x: 1300}}
-                             columns={this.props.showAction ? columns.concat(actionColumnDef) : columns}
-                             dataSource={this.state.tableData}
-                             bordered={true}
-                         />
-                 }
-             </FormItem>
-         </Form>
-        );
-    }}
+                     }
+                 </FormItem>
+             </Form>
+            );
+        }}
 
-export const WrappedSearchGrid = Form.create<Props & FormComponentProps & FilterDropdownProps>()(SearchGrid);
+    export const WrappedSearchGrid = Form.create<Props & FormComponentProps & FilterDropdownProps>()(SearchGrid);
