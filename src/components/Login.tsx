@@ -15,11 +15,11 @@ interface State {
     password: string|undefined;
     waitMinute: boolean;
     count: number;
-    img: any;
+    images: any;
 }
 
 export class Login extends React.Component<Props, State> {
-    state = {principal: undefined, userName: undefined, password: undefined, waitMinute: true, count: 0, img: logo};
+    state = {principal: undefined, userName: undefined, password: undefined, waitMinute: true, count: 0, images: logo};
 
     componentDidMount(): void {
         this.authenticate().catch(()=>{
@@ -31,7 +31,7 @@ export class Login extends React.Component<Props, State> {
         this.state.count === undefined ?
             this.setState({count: 1}) :
             this.state.count < 10 ? this.setState({count: this.state.count + 1}) :
-                this.state.count === 10 ? this.setState({img: pony, count: 0}) :
+                this.state.count === 10 ? this.setState({images: pony, count: 0}) :
                     this.setState({count: 0})
     };
 
@@ -48,7 +48,7 @@ export class Login extends React.Component<Props, State> {
                         <Header style={{height: '30vh', backgroundColor: '#ffffff'}}>
                             <Row type="flex" justify="space-between">
                                 <Col span={1}>
-                                    <img src={this.state.img} className="logo" onClick={this.surprise}/>
+                                    <img alt="Not found" src={this.state.images} className="logo" onClick={this.surprise}/>
                                 </Col>
                                 <Col>
                                     <Button type="dashed">

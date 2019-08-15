@@ -1,5 +1,5 @@
 import * as React from "react";
-import {Button, Form, Icon, Input, Select, Table} from 'antd';
+import {Button, Form, Icon, Table} from 'antd';
 import Ecore from "ecore";
 import {API} from "../modules/api";
 import {Link} from "react-router-dom";
@@ -7,7 +7,7 @@ import forEach from "lodash/forEach"
 import {FormComponentProps} from "antd/lib/form";
 import {WrappedDataSearch} from "./DataSearch";
 import FormItem from "antd/es/form/FormItem";
-import {ColumnFilterItem, FilterDropdownProps} from "antd/lib/table";
+import {WrappedSearchFilter} from "./SearchFilter";
 
 interface Props {
     onSelect?: (resources: Ecore.Resource[]) => void;
@@ -19,22 +19,22 @@ interface State {
     resources: Ecore.Resource[];
     columns: Array<any>;
     tableData: Array<any>;
+    tableDataFilter: Array<any>;
     notFoundActivator: boolean;
     result: string;
     selectedRowKeys: any[];
-    searchText: string;
 }
 
-class SearchGrid extends React.Component<Props & FormComponentProps & FilterDropdownProps, State> {
+class SearchGrid extends React.Component<Props & FormComponentProps, State> {
 
     state = {
         resources: [],
         columns: [],
         tableData: [],
+        tableDataFilter: [],
         notFoundActivator: false,
         result: '',
-        selectedRowKeys: [],
-        searchText: ""
+        selectedRowKeys: []
     };
 
     handleSearch = (resources : Ecore.Resource[]): void => {
@@ -44,6 +44,7 @@ class SearchGrid extends React.Component<Props & FormComponentProps & FilterDrop
         const columns:Array<Ecore.EStructuralFeature> = resources.length > 0 ? this.prepareColumns(resources): [];
         this.setState({ resources: resources, columns: columns});
         this.setState({notFoundActivator: true});
+        this.setState({tableDataFilter: []});
     };
 
     prepareColumns(resources:Ecore.Resource[]):Array<Ecore.EStructuralFeature>{
@@ -56,16 +57,18 @@ class SearchGrid extends React.Component<Props & FormComponentProps & FilterDrop
                 }
             }
         });
-        let name: string = 'eClass';
-        const type: string = 'stringType';
-        const AllColumns:Array<any> = [{title: name, dataIndex: name, key: name, type: name,
-            sorter: (a: any, b: any) => this.sortColumns(a, b, name, type),
-            // filters: this.filterColumns(name),
-            filters: this.filterColumns(name),
-            onFilter: (value: any, record: any) => record.eClass.toLowerCase() === value.toLowerCase(),
-            // ...this.getColumnSearchProps(name),
-        }];
 
+
+        let name: string = 'eClass';
+        let type: string = 'stringType';
+        let AllColumns:Array<any> = [{title: name, dataIndex: name, key: name, type: name,
+            sorter: (a: any, b: any) => this.sortColumns(a, b, name, type),
+            filters: this.filterColumns(name),
+            filterIcon: (filtered: any) => (
+                <Icon type="search" style={{ color: filtered ? "#1890ff" : undefined }} />
+            ),
+            onFilter: (value: any, record: any) => record.eClass.toLowerCase() === value.toLowerCase(),
+        }];
 
 
         for (let column of AllFeatures){
@@ -80,8 +83,11 @@ class SearchGrid extends React.Component<Props & FormComponentProps & FilterDrop
                         return text.slice(0, maxJsonLength) + "..." }
                 else {return text}},
                 ...this.getColumnSearchProps(name),
-                // filters: this.filterColumns(name),
-                // onFilter: (value: any, record: any) => record.name.toLowerCase() === value.toLowerCase(),
+                filterIcon: (filtered: any) => (
+                    <Icon type="search" style={{ color: filtered ? "#1890ff" : undefined }} />
+                ),
+                onFilter: (value: any, record: any) => record.name !== undefined ?
+                    record.name.toString().toLowerCase() === value.toString().toLowerCase() : undefined
             })
         }
         return AllColumns;
@@ -146,29 +152,14 @@ class SearchGrid extends React.Component<Props & FormComponentProps & FilterDrop
 
     filterColumns = (name: string): Array<any> => {
         const result: Array<any> = [];
-        for (let td of this.state.tableData){
+        const tableData: Array<any> = this.state.tableDataFilter.length === 0 ?
+                this.state.tableData : this.state.tableDataFilter;
+        for (let td of tableData){
             if (td[name] !== undefined && result.every((value) => value.text !== td[name])) {
                 result.push({ text: td[name], value: td[name] })
             }
         }
         return result.sort((a: any, b: any) => this.sortColumns(a, b, "text", "stringType"));
-    };
-
-    //Добавить поиск по пустому значению
-    filterDataSource = (name: string, searchText: string): Array<any> => {
-        const result: Array<any> = [];
-        for (let td of this.state.tableData){
-            const tdName: string = td[name.toString().toLowerCase()];
-            if (this.state.searchText === "") {
-                if (tdName !== undefined && result.every((value) => value[name] !== tdName)) { result.push(td) }
-            }
-            else {
-                if (tdName !== undefined && result.every((value) => value[name] !== tdName &&
-                    tdName.includes(searchText)
-                )) { result.push(td) }
-            }
-        }
-        return result.sort((a: any, b: any) => this.sortColumns(a, b, name, "stringType"));
     };
 
     handleSelect = () => {
@@ -193,70 +184,16 @@ class SearchGrid extends React.Component<Props & FormComponentProps & FilterDrop
 
     //for FilterMenu
     getColumnSearchProps = (name: any) => ({
-        filterDropdown: (props: {
-            setSelectedKeys: (selectedKeys: string[]) => void,
-            selectedKeys: any,
-            confirm: () => void,
-            clearFilters: () => void,
-            filters: ColumnFilterItem[],
-            filterTableData: any,
-            setFilterTableData: (filterTableData: any[]) => void
-        }) => (
-                <Form style={{ padding: 9 }}>
-                        <Input
-                            placeholder={`Search ${name}`}
-                            value={props.selectedKeys[0]}
-                            onChange={e => props.setSelectedKeys(e.target.value ? [e.target.value] : [])}
-                            // onChange={e => this.filterDataSource(name, e.target.value)}
-                            onPressEnter={() => this.handleSearchFilterDropdown(props.selectedKeys, props.confirm)}
-                            style={{ width: 188, marginBottom: 8, display: "block" }}
-                            defaultChecked={true}
-                            allowClear={true}
-                        />
-                        <Table
-                            size={"small"}
-                            style={{whiteSpace: "pre", maxWidth: "300px", maxHeight: "400px"}}
-                            showHeader={false}
-                            scroll={{x: 200, y: 400}}
-                            columns={[{title: name, dataIndex: name, key: name}]}
-                            dataSource={this.filterDataSource(name, props.selectedKeys[0])}
-                            bordered={true}
-                            />
-                            <Button
-                                type="primary"
-                                onClick={() => this.handleSearchFilterDropdown(props.selectedKeys, props.confirm)}
-                                icon="search"
-                                size="small"
-                                style={{ width: 90, marginRight: 8 }}
-                            />
-                            <Button
-                                onClick={() => this.handleResetFilterDropdown(props.clearFilters)}
-                                size="small"
-                                style={{ width: 90 }}
-                                icon="rest"
-                            />
-                    </Form>
-            ),
+        filterDropdown: () =>
+                <WrappedSearchFilter onName={name} tableData={this.state.tableData}
+                                     tableDataFilter={this.changeTableData}/>
+    });
 
-            filterIcon: (filtered: any) => (
-                <Icon type="search" style={{ color: filtered ? "#1890ff" : undefined }} />
-            ),
+    changeTableData = (tableDataFilter: Array<any>) => {
+        this.setState({tableDataFilter})
+    };
 
-            onFilter: (value: string, record: string) =>
-                record[name] !== undefined ? record[name].toLowerCase().includes(value.toLowerCase()) : false,
-        });
-
-        handleSearchFilterDropdown = (selectedKeys: string[], confirm: () => void) => {
-            confirm();
-            this.setState({ searchText: selectedKeys[0] });
-        };
-
-        handleResetFilterDropdown = (clearFilters: () => void) => {
-            clearFilters();
-            this.setState({ searchText: "" });
-        };
-
-        render() {
+    render() {
             const columns:Array<any> = this.state.columns;
             const actionColumnDef = [{
                 title: 'Action',
@@ -275,7 +212,7 @@ class SearchGrid extends React.Component<Props & FormComponentProps & FilterDrop
             const {selectedRowKeys} = this.state;
             const rowSelection = {
                 selectedRowKeys,
-                onChange: this.onSelectChange,
+                onChange: this.onSelectChange
             };
             const hasSelected = selectedRowKeys.length > 0;
             return (
@@ -301,17 +238,21 @@ class SearchGrid extends React.Component<Props & FormComponentProps & FilterDrop
                                  <Table
                                      scroll={{x: 1300}}
                                      columns={this.props.showAction ? columns.concat(actionColumnDef) : columns}
-                                     dataSource={this.state.tableData}
+                                     dataSource={this.state.tableDataFilter.length === 0 ?
+                                         this.state.tableData : this.state.tableDataFilter}
                                      bordered={true}
                                      rowSelection={rowSelection}
+                                     style={{whiteSpace: "pre"}}
                                  />
                              </div>
                              :
                              <Table
                                  scroll={{x: 1300}}
                                  columns={this.props.showAction ? columns.concat(actionColumnDef) : columns}
-                                 dataSource={this.state.tableData}
+                                 dataSource={this.state.tableDataFilter.length === 0 ?
+                                     this.state.tableData : this.state.tableDataFilter}
                                  bordered={true}
+                                 style={{whiteSpace: "pre"}}
                              />
                      }
                  </FormItem>
@@ -319,4 +260,4 @@ class SearchGrid extends React.Component<Props & FormComponentProps & FilterDrop
             );
         }}
 
-    export const WrappedSearchGrid = Form.create<Props & FormComponentProps & FilterDropdownProps>()(SearchGrid);
+    export const WrappedSearchGrid = Form.create<Props & FormComponentProps>()(SearchGrid);
