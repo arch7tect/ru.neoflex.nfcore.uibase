@@ -1,6 +1,6 @@
 import * as React from "react";
 import { Tree, Icon, Table, Modal, Button, Select, Row, Col } from 'antd';
-import Ecore from "ecore";
+import Ecore, { EObject } from "ecore";
 import { API } from "../modules/api";
 import Splitter from './CustomSplitter'
 import update from 'immutability-helper';
@@ -204,34 +204,45 @@ export class ResourceEditor extends React.Component<any, State> {
         this.setState({ rightClickMenuVisible: true, rightMenuPosition: { x: e.event.clientX, y: e.event.clientY } })
     };
 
-    prepareTableData(targetObject: ITargetObject, resource: Ecore.EObject): Array<any> {
+    prepareTableData(targetObject: ITargetObject, resource: EObject): Array<any> {
+
+        const boolSelectionOption: { [key: string]: any } = { "null": null, "true": true, "false": false }
+        const getPrimitiveType = (value:string):any => boolSelectionOption[value]
+        const convertPrimitiveToString = (value:string):any => String(boolSelectionOption[value])
 
         const prepareValue = (eObject: Ecore.EObject, value: any, idx:Number): any => {
-
-            //resource.eContainer.getEObject(targetObject._id).eClass.get('eAllStructuralFeatures')[1].get('eType').get('name')
-
             if (eObject.isKindOf('EReference')) {
                 const elements = value ? value.map((el: Object, idx: number) => <React.Fragment key={idx}>{JSON.stringify(el)}<br /></React.Fragment>) : []
-                const component = <React.Fragment key={eObject.get('name')+"_browser" + idx}>
+                const component = <React.Fragment key={eObject.get('name')+"_"+targetObject.id}>
                     {elements}
-                    <Button key={eObject.get('name')+"_browser" + idx} onClick={()=>this.setState({ modalVisible: true })}>...</Button>
-                </React.Fragment>;
+                    <Button key={eObject.get('name')+"_"+targetObject.id} onClick={()=>this.setState({ modalVisible: true })}>...</Button>
+                </React.Fragment>
                 return component
             } else if (eObject.get('eType').isKindOf('EDataType') && eObject.get('eType').get('name') === "EBoolean") {
-                return <Select key={"_select" + idx} style={{ width: "300px" }} onChange={(newValue: any) => {
-                        const updatedJSON = targetObject.updater({ [eObject.get('name')]: newValue });
+                return <Select value={convertPrimitiveToString(value)} key={eObject.get('name')+"_bool_"+targetObject.id} style={{ width: "300px" }} onChange={(newValue: any) => {
+                        const updatedJSON = targetObject.updater({ [eObject.get('name')]: getPrimitiveType(newValue) });
                         const nestedJSON = this.nestUpdaters(updatedJSON, null);
                         const object = this.findObjectById(nestedJSON, targetObject._id);
                         const preparedData = this.prepareTableData(object, this.state.resource);
                         this.setState({ resourceJSON: nestedJSON, tableData: preparedData })
                     }}>
-                        <Select.Option key={eObject.get('name')+"_select_null" + idx} value={undefined}>Null</Select.Option>
-                        <Select.Option key={eObject.get('name')+"_select_true" + idx} value={"true"}>True</Select.Option>
-                        <Select.Option key={eObject.get('name')+"_select_false" + idx} value={"false"}>False</Select.Option>
+                        {Object.keys(boolSelectionOption).map((value:any)=>
+                            <Select.Option key={eObject.get('name')+"_opt_"+value+"_"+targetObject.id} value={value}>{value}</Select.Option>)}
+                </Select>
+            } else if (eObject.get('eType').isKindOf('EEnum')){
+                return <Select value={value} key={eObject.get('name')+"_enum_"+targetObject.id} style={{ width: "300px" }} onChange={(newValue: any) => {
+                    const updatedJSON = targetObject.updater({ [eObject.get('name')]: newValue });
+                    const nestedJSON = this.nestUpdaters(updatedJSON, null);
+                    const object = this.findObjectById(nestedJSON, targetObject._id);
+                    const preparedData = this.prepareTableData(object, this.state.resource);
+                    this.setState({ resourceJSON: nestedJSON, tableData: preparedData })
+                }}>
+                    {eObject.get('eType').eContents().map((obj:EObject)=>
+                        <Select.Option key={eObject.get('name')+"_opt_"+obj.get('name')+"_"+targetObject.id} value={obj.get('name')}>{obj.get('name')}</Select.Option>)}
                 </Select>
             } else {
                 return <EditableTextArea
-                    key={eObject.get('name')+"_textarea" + idx}
+                    key={eObject.get('name')+"_textarea"}
                     editedProperty={eObject.get('name')}
                     value={value}
                     onChange={(newValue: Object) => {
@@ -243,27 +254,6 @@ export class ResourceEditor extends React.Component<any, State> {
                     }}
                 />
             }
-/*
-            if (Array.isArray(value)) {
-                const elements = value.map((el, idx) => <React.Fragment key={idx}>{JSON.stringify(el)}<br /></React.Fragment>)
-                const component = <React.Fragment>
-                    {elements}
-                    <Button onClick={()=>this.setState({ modalVisible: true })}>...</Button>
-                </React.Fragment>
-                return component
-            } else {
-                return <EditableTextArea
-                    editedProperty={key}
-                    value={value}
-                    onChange={(newValue: Object) => {
-                        const updatedJSON = targetObject.updater(newValue)
-                        const nestedJSON = this.nestUpdaters(updatedJSON, null)
-                        const object = this.findObjectById(nestedJSON, targetObject._id)
-                        const preparedData = this.prepareTableData(object, this.state.resource)
-                        this.setState({ resourceJSON: nestedJSON, tableData: preparedData })
-                    }}
-                />
-            }*/
         }
 
         const preparedData:Array<Object> = [];
