@@ -207,7 +207,8 @@ export class ResourceEditor extends React.Component<any, State> {
     prepareTableData(targetObject: ITargetObject, resource: EObject): Array<any> {
 
         const boolSelectionOption: { [key: string]: any } = { "null": null, "true": true, "false": false }
-        const properfySelectValue = (value:string):any => boolSelectionOption[value]
+        const getPrimitiveType = (value:string):any => boolSelectionOption[value]
+        const convertPrimitiveToString = (value:string):any => String(boolSelectionOption[value])
 
         const prepareValue = (eObject: Ecore.EObject, value: any, idx:Number): any => {
             if (eObject.isKindOf('EReference')) {
@@ -218,8 +219,8 @@ export class ResourceEditor extends React.Component<any, State> {
                 </React.Fragment>
                 return component
             } else if (eObject.get('eType').isKindOf('EDataType') && eObject.get('eType').get('name') === "EBoolean") {
-                return <Select key={eObject.get('name')+"_bool_"+targetObject.id} style={{ width: "300px" }} onChange={(newValue: any) => {
-                        const updatedJSON = targetObject.updater({ [eObject.get('name')]: properfySelectValue(newValue) });
+                return <Select value={convertPrimitiveToString(value)} key={eObject.get('name')+"_bool_"+targetObject.id} style={{ width: "300px" }} onChange={(newValue: any) => {
+                        const updatedJSON = targetObject.updater({ [eObject.get('name')]: getPrimitiveType(newValue) });
                         const nestedJSON = this.nestUpdaters(updatedJSON, null);
                         const object = this.findObjectById(nestedJSON, targetObject._id);
                         const preparedData = this.prepareTableData(object, this.state.resource);
@@ -229,8 +230,8 @@ export class ResourceEditor extends React.Component<any, State> {
                             <Select.Option key={eObject.get('name')+"_opt_"+value+"_"+targetObject.id} value={value}>{value}</Select.Option>)}
                 </Select>
             } else if (eObject.get('eType').isKindOf('EEnum')){
-                return <Select key={eObject.get('name')+"_enum_"+targetObject.id} style={{ width: "300px" }} onChange={(newValue: any) => {
-                    const updatedJSON = targetObject.updater({ [eObject.get('name')]: properfySelectValue(newValue) });
+                return <Select value={value} key={eObject.get('name')+"_enum_"+targetObject.id} style={{ width: "300px" }} onChange={(newValue: any) => {
+                    const updatedJSON = targetObject.updater({ [eObject.get('name')]: newValue });
                     const nestedJSON = this.nestUpdaters(updatedJSON, null);
                     const object = this.findObjectById(nestedJSON, targetObject._id);
                     const preparedData = this.prepareTableData(object, this.state.resource);
