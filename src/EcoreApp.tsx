@@ -8,9 +8,10 @@ import {ResourceEditor} from "./components/ResourceEditor"
 import {Link, Redirect, Route, RouteComponentProps, Switch} from "react-router-dom";
 import {QueryRunner} from "./components/QueryRunner";
 import {Login} from "./components/Login";
-import logo from "./logo.png";
+//import logo from "./logo.png";
 import {DataBrowser} from "./components/DataBrowser";
 import {Test} from "./components/Test";
+import {MainApp} from "./MainApp";
 
 const { Header, Content, Sider } = Layout;
 
@@ -20,10 +21,15 @@ export interface Props extends RouteComponentProps {
 
 interface State {
     principal?: any;
+    appName: string
 }
 
 export class EcoreApp extends React.Component<any, State> {
-    state = {principal: undefined};
+
+    constructor(props: any) {
+        super(props)
+        this.state = {principal: undefined, appName: props.appName};
+    }
 
     onRightMenu(e : any) {
         if (e.key === "logout") {
@@ -44,7 +50,7 @@ export class EcoreApp extends React.Component<any, State> {
         this.setState({principal}, API.instance().init)
     };
 
-    render() {
+    render = () => {
         return (
             <Layout>
                 {this.state.principal === undefined ?
@@ -60,7 +66,7 @@ export class EcoreApp extends React.Component<any, State> {
         )
     }
 
-    renderDev() {
+    renderDev = () => {
         let principal = this.state.principal as any;
         return (
             <Layout style={{height: '100vh'}}>
@@ -111,12 +117,9 @@ export class EcoreApp extends React.Component<any, State> {
         )
     }
 
-    renderStartPage() {
+    renderStartPage = ()=>{
         return (
-            <Layout>
-                App
-                <img alt="The great and terrible" src={logo} className="logo"/>
-            </Layout>
+            <MainApp {...this.props}></MainApp>
         )
     }
 }
