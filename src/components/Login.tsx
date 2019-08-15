@@ -2,6 +2,7 @@ import * as React from "react";
 import { Layout, Row, Col,Button } from 'antd'
 import {API} from "../modules/api";
 import logo from '../logo.png';
+import pony from '../pony.png';
 const { Header, Content } = Layout;
 
 export interface Props {
@@ -13,10 +14,12 @@ interface State {
     userName: string|undefined;
     password: string|undefined;
     waitMinute: boolean;
+    count: number;
+    img: any;
 }
 
 export class Login extends React.Component<Props, State> {
-    state = {principal: undefined, userName: undefined, password: undefined, waitMinute: true}
+    state = {principal: undefined, userName: undefined, password: undefined, waitMinute: true, count: 0, img: logo};
 
     componentDidMount(): void {
         this.authenticate().catch(()=>{
@@ -24,10 +27,18 @@ export class Login extends React.Component<Props, State> {
         })
     }
 
+    surprise = () => {
+        this.state.count === undefined ?
+            this.setState({count: 1}) :
+            this.state.count < 10 ? this.setState({count: this.state.count + 1}) :
+                this.state.count === 10 ? this.setState({img: pony, count: 0}) :
+                    this.setState({count: 0})
+    };
+
     render() {
-        if (this.state.waitMinute === true) {
+        if (this.state.waitMinute) {
             return (
-                <div className="loader"></div>
+                <div className="loader"/>
             )
         }
         else {
@@ -37,11 +48,10 @@ export class Login extends React.Component<Props, State> {
                         <Header style={{height: '30vh', backgroundColor: '#ffffff'}}>
                             <Row type="flex" justify="space-between">
                                 <Col span={1}>
-                                    <img alt="The great and terrible" src={logo} className="logo"/>
+                                    <img src={this.state.img} className="logo" onClick={this.surprise}/>
                                 </Col>
                                 <Col>
                                     <Button type="dashed">
-                                        {/*Настроить переключение языков*/}
                                         EN
                                     </Button>
                                 </Col>
