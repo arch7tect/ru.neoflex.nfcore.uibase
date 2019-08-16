@@ -1,0 +1,19 @@
+.tool-button {
+    width: 60px;
+    cursor: pointer;
+    padding-left: 10px;
+    padding-right: 10px;
+}
+
+.tool-button-selected {
+    width: 60px;
+    cursor: pointer;
+    padding-left: 10px;
+    padding-right: 10px;
+    color: #46a6ff;
+    font-weight: bold;
+}
+
+.magnify:hover {
+    transform: scale(1.2);
+}
