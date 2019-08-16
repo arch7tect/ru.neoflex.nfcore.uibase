@@ -86,7 +86,6 @@ class SearchFilter extends React.Component<Props & FormComponentProps, State> {
                 selectedRowKeys,
                 onChange: this.onSelectChange
             };
-            const hasSelected = this.state.selectedRowKeys.length > 0;
             return (
                 <Form style={{ padding: 9 }} >
                     <Input
@@ -107,7 +106,6 @@ class SearchFilter extends React.Component<Props & FormComponentProps, State> {
                         rowSelection={rowSelection}
                     />
                     <Button
-                        disabled={!hasSelected}
                         type="primary"
                         onClick={() => this.handleSearchFilterDropdown(this.state.selectedKeys)}
                         icon="search"
@@ -117,7 +115,9 @@ class SearchFilter extends React.Component<Props & FormComponentProps, State> {
                     <Button
                         onClick={() => {
                             this.setState({selectedKeys: [], selectedRowKeys: []});
-                            if (this.props.tableDataFilter) {this.props.tableDataFilter(this.props.tableData)}
+                            if (this.props.tableDataFilter) {
+                                this.props.tableDataFilter(this.props.tableData);
+                            }
                         }}
                         size="small"
                         style={{ width: 90 }}

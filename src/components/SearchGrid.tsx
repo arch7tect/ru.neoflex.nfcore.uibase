@@ -11,8 +11,8 @@ import {WrappedSearchFilter} from "./SearchFilter";
 
 interface Props {
     onSelect?: (resources: Ecore.Resource[]) => void;
-    showAction?: boolean;
-    specialEClass?: Ecore.EClass | undefined;
+    showAction: boolean;
+    specialEClass: Ecore.EClass | undefined;
 }
 
 interface State {
@@ -57,20 +57,16 @@ class SearchGrid extends React.Component<Props & FormComponentProps, State> {
                 }
             }
         });
-
-
         let name: string = 'eClass';
         let type: string = 'stringType';
         let AllColumns:Array<any> = [{title: name, dataIndex: name, key: name, type: name,
             sorter: (a: any, b: any) => this.sortColumns(a, b, name, type),
-            filters: this.filterColumns(name),
+            ...this.getColumnSearchProps(name),
             filterIcon: (filtered: any) => (
                 <Icon type="search" style={{ color: filtered ? "#1890ff" : undefined }} />
             ),
             onFilter: (value: any, record: any) => record.eClass.toLowerCase() === value.toLowerCase(),
         }];
-
-
         for (let column of AllFeatures){
             let name: string = "";
             column.get('name') === "children" ? name = "_children" : name = column.get('name');
@@ -78,7 +74,7 @@ class SearchGrid extends React.Component<Props & FormComponentProps, State> {
             AllColumns.push({title: name, dataIndex: name, key: name, type: type,
                 sorter: (a: any, b: any) => this.sortColumns(a, b, name, type),
                 render: (text: any) => {
-                if (text !== undefined && column.get('eType').eClass.get('name') !== 'EDataType') {
+                if (text !== undefined && !!column.get('eType') && column.get('eType').eClass.get('name') !== 'EDataType') {
                         const maxJsonLength = text.indexOf('#') + 1;
                         return text.slice(0, maxJsonLength) + "..." }
                 else {return text}},
@@ -182,10 +178,18 @@ class SearchGrid extends React.Component<Props & FormComponentProps, State> {
         this.setState({ selectedRowKeys });
     };
 
+    filteredData = () => {
+        if (this.state.tableDataFilter.length === 0) {
+            return this.state.tableData
+        } else {
+            return this.state.tableDataFilter
+        }
+    };
+
     //for FilterMenu
     getColumnSearchProps = (name: any) => ({
         filterDropdown: () =>
-                <WrappedSearchFilter onName={name} tableData={this.state.tableData}
+                <WrappedSearchFilter onName={name} tableData={this.filteredData()}
                                      tableDataFilter={this.changeTableData}/>
     });
 
@@ -219,7 +223,7 @@ class SearchGrid extends React.Component<Props & FormComponentProps, State> {
              <Form style={{padding: '20px'}}>
                  <FormItem>
                      <WrappedDataSearch onSearch={this.handleSearch}
-                                        specialEClass={this.props.specialEClass !== undefined ? this.props.specialEClass : undefined}
+                                        specialEClass={this.props.specialEClass}
                      />
                  </FormItem>
                  <FormItem>
@@ -238,8 +242,7 @@ class SearchGrid extends React.Component<Props & FormComponentProps, State> {
                                  <Table
                                      scroll={{x: 1300}}
                                      columns={this.props.showAction ? columns.concat(actionColumnDef) : columns}
-                                     dataSource={this.state.tableDataFilter.length === 0 ?
-                                         this.state.tableData : this.state.tableDataFilter}
+                                     dataSource={this.filteredData()}
                                      bordered={true}
                                      rowSelection={rowSelection}
                                      style={{whiteSpace: "pre"}}
@@ -249,8 +252,7 @@ class SearchGrid extends React.Component<Props & FormComponentProps, State> {
                              <Table
                                  scroll={{x: 1300}}
                                  columns={this.props.showAction ? columns.concat(actionColumnDef) : columns}
-                                 dataSource={this.state.tableDataFilter.length === 0 ?
-                                     this.state.tableData : this.state.tableDataFilter}
+                                 dataSource={this.filteredData()}
                                  bordered={true}
                                  style={{whiteSpace: "pre"}}
                              />

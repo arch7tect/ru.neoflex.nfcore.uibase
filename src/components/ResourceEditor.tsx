@@ -1,14 +1,14 @@
 import * as React from "react";
-import { Tree, Icon, Table, Modal, Button, Select, Row, Col } from 'antd';
-import Ecore, { EObject } from "ecore";
-import { API } from "../modules/api";
+import {Button, Col, Icon, Modal, Row, Select, Table, Tree} from 'antd';
+import Ecore, {EObject} from "ecore";
+import {API} from "../modules/api";
 import Splitter from './CustomSplitter'
 import update from 'immutability-helper';
 //import { any } from "prop-types";
 //import _filter from 'lodash/filter'
 //import _map from 'lodash/map'
 import EditableTextArea from './EditableTextArea'
-import {WrappedResourceSearch} from "./ResourceSearch";
+import {WrappedSearchGrid} from "./SearchGrid";
 
 interface ITargetObject {
     [key: string]: any;
@@ -254,7 +254,7 @@ export class ResourceEditor extends React.Component<any, State> {
                     }}
                 />
             }
-        }
+        };
 
         const preparedData:Array<Object> = [];
         const featureList = resource.eContainer.getEObject(targetObject._id).eClass.get('eAllStructuralFeatures')
@@ -264,7 +264,7 @@ export class ResourceEditor extends React.Component<any, State> {
                 property: feature.get('name'), 
                 value: prepareValue(feature, targetObject[feature.get('name')], idx), 
                 key: feature.get('name') + idx })
-        })
+        });
 
         return preparedData
     }
@@ -334,11 +334,13 @@ export class ResourceEditor extends React.Component<any, State> {
                 <Modal
                     width={'1000px'}
                     title="Add resource"
+                    destroyOnClose={true}
+                    maskClosable={true}
                     visible={this.state.modalVisible}
-                    onOk={this.handleModalOk}
                     onCancel={this.handleModalCancel}
+                    footer={false}
                 >
-                    <WrappedResourceSearch onSelect={this.handleSelect}/>
+                    <WrappedSearchGrid onSelect={this.handleSelect} showAction={false} specialEClass={undefined}/>
                 </Modal>
                 {this.state.rightClickMenuVisible && <div className="right-menu" style={{
                     position: "absolute",

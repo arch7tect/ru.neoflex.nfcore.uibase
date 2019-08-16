@@ -8,9 +8,7 @@ import {ResourceEditor} from "./components/ResourceEditor"
 import {Link, Redirect, Route, RouteComponentProps, Switch} from "react-router-dom";
 import {QueryRunner} from "./components/QueryRunner";
 import {Login} from "./components/Login";
-//import logo from "./logo.png";
 import {DataBrowser} from "./components/DataBrowser";
-import {Test} from "./components/Test";
 import {MainApp} from "./MainApp";
 
 const { Header, Content, Sider } = Layout;
@@ -27,7 +25,7 @@ interface State {
 export class EcoreApp extends React.Component<any, State> {
 
     constructor(props: any) {
-        super(props)
+        super(props);
         this.state = {principal: undefined, appName: props.appName};
     }
 
@@ -35,7 +33,7 @@ export class EcoreApp extends React.Component<any, State> {
         if (e.key === "logout") {
             API.instance().logout().then(() => {
                 this.setState({principal : undefined});
-            })
+            });
             this.props.history.push('')
         }
         else if (e.key === "developer") {
@@ -64,7 +62,7 @@ export class EcoreApp extends React.Component<any, State> {
                 }
             </Layout>
         )
-    }
+    };
 
     renderDev = () => {
         let principal = this.state.principal as any;
@@ -87,7 +85,7 @@ export class EcoreApp extends React.Component<any, State> {
                 </Switch>
             </Layout>
         )
-    }
+    };
 
     renderSettings=()=>{
         let selectedKeys = ['metadata', 'data', 'query']
@@ -99,7 +97,6 @@ export class EcoreApp extends React.Component<any, State> {
                         <Menu.Item key={'metadata'}><Link to={`/settings/metadata`}>Metadata</Link></Menu.Item>
                         <Menu.Item key={'data'}><Link to={`/settings/data`}>Data</Link></Menu.Item>
                         <Menu.Item key={'query'}><Link to={`/settings/query`}>Query</Link></Menu.Item>
-                        <Menu.Item key={'test'}><Link to={`/settings/test`}>Test</Link></Menu.Item>
                     </Menu>
                 </Sider>
                 <Layout>
@@ -109,13 +106,12 @@ export class EcoreApp extends React.Component<any, State> {
                             <Route exact={true} path='/settings/data' component={DataBrowser}/>
                             <Route path='/settings/data/:id/:ref' component={ResourceEditor}/>
                             <Route path='/settings/query' component={QueryRunner}/>
-                            <Route path='/settings/test' component={Test}/>
                         </Switch>
                     </Content>
                 </Layout>
             </Layout>
         )
-    }
+    };
 
     renderStartPage = ()=>{
         return (
