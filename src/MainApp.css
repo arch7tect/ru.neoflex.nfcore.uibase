@@ -1,12 +1,27 @@
+.references-button {
+    display: inline-block;
+    cursor: pointer;
+}
+
+.references-button:hover {
+    transition: transform 1s;
+    transform: scale(1.2);
+    color: #46a6ff;
+}
+
 .tool-button {
-    width: 60px;
+    display: inline-block;
+    text-align: center;
+    width: 80px;
     cursor: pointer;
     padding-left: 10px;
     padding-right: 10px;
 }
 
 .tool-button-selected {
-    width: 60px;
+    display: inline-block;
+    text-align: center;
+    width: 80px;
     cursor: pointer;
     padding-left: 10px;
     padding-right: 10px;
@@ -15,5 +30,6 @@
 }
 
 .magnify:hover {
+    transition: transform 1s;
     transform: scale(1.2);
 }

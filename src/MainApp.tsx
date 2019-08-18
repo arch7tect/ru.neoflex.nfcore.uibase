@@ -1,6 +1,6 @@
 import * as React from "react";
 import Splitter from './components/CustomSplitter'
-import {Button, Tooltip} from "antd";
+import {Tooltip} from "antd";
 import {Icon as IconFA} from 'react-fa';
 import './MainApp.css'
 
@@ -32,12 +32,14 @@ export class MainApp extends React.Component<any, State> {
         return (
             <div>
                 <Tooltip title={this.state.hideReferences ? "Show" : "Hide"}>
-                    <Button size={"small"} type="dashed" shape="round" onClick={() => {
+                    <span className="references-button" onClick={() => {
                         this.setState({hideReferences: !this.state.hideReferences})
-                    }}><IconFA name="bars"></IconFA></Button>
+                    }}><IconFA name="bars"></IconFA></span>
                 </Tooltip>
-                {this.renderToolButton("log", "Log", "ellipsis-v")}
-                {this.renderToolButton("search", "Search", "search")}
+                <div style={{display: "inline-block", alignItems: "center", justifyContent: "center", alignContent: "center"}}>
+                    {this.renderToolButton("log", "Log", "ellipsis-v")}
+                    {this.renderToolButton("search", "Search", "search")}
+                </div>
            </div>
         )
     }
@@ -59,6 +61,7 @@ export class MainApp extends React.Component<any, State> {
             <div style={{flexGrow: 1}}>
                 <Splitter
                     minimalizedPrimaryPane={this.state.hideReferences}
+                    allowResize={!this.state.hideReferences}
                     ref={this.refSplitterRef}
                     position="vertical"
                     primaryPaneMaxWidth="50%"
@@ -75,7 +78,7 @@ export class MainApp extends React.Component<any, State> {
                         {this.renderReferences()}
                     </div>
                     <div style={{height: '100%', width: '100%', overflow: 'auto'}}>
-                        <div style={{height: `calc(100% - ${FooterHeight})`, width: '100%', overflow: 'auto'}}>
+                        <div style={{height: `calc(100% - ${FooterHeight})`, width: '100%', overflow: 'hidden'}}>
                             <Splitter
                                 ref={this.toolsSplitterRef}
                                 position="horizontal"
@@ -84,17 +87,19 @@ export class MainApp extends React.Component<any, State> {
                                 primaryPaneHeight={localStorage.getItem('mainapp_toolssplitter_pos') || "400px"}
                                 dispatchResize={true}
                                 postPoned={false}
+                                maximizedPrimaryPane={this.state.currentTool === undefined}
+                                allowResize={this.state.currentTool !== undefined}
                                 onDragFinished={() => {
                                     const size: string = this.toolsSplitterRef.current!.panePrimary.props.style.height
                                     localStorage.setItem('mainapp_toolssplitter_pos', size)
                                 }}
                             >
-                                <div style={{flexGrow: 1}}>
+                                <div style={{flexGrow: 1, overflow: 'auto'}}>
                                     {this.renderContent()}
                                 </div>
-                                {this.state.currentTool !== undefined && <div style={{height: '100%', width: '100%', overflow: 'auto'}}>
+                                <div style={{height: '100%', width: '100%', overflow: 'auto'}}>
                                     {this.renderToolbox()}
-                                </div>}
+                                </div>
                             </Splitter>
                         </div>
                         <div style={{height: `${FooterHeight}`}}>
