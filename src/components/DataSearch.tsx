@@ -134,13 +134,13 @@ class DataSearch extends React.Component<Props & FormComponentProps, State> {
                                 )}
                             </FormItem>
                             {this.state.indicatorError ?
-                                <img alt="..." src={ponyCat} className="error" />
+                                <img alt="Not found" src={ponyCat} className="error" />
                                 :
                                 undefined
                             }
                         </TabPane>
                         <TabPane tab='Json Search' key='json_search'>
-                            <Form.Item>
+                            <FormItem>
                                 {getFieldDecorator('json_field', {
                                     initialValue: JSON.stringify({
                                         contents: {eClass: !!this.props.specialEClass ? this.props.specialEClass.eURI() : "ru.neoflex.nfcore.base.auth#//User"}}, null, 4),
@@ -166,7 +166,7 @@ class DataSearch extends React.Component<Props & FormComponentProps, State> {
                                     />
                                     </div>
                                     )}
-                              </Form.Item>
+                              </FormItem>
                         </TabPane>
                     </Tabs>
                 )}

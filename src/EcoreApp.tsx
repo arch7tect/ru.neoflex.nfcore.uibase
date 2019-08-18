@@ -1,8 +1,8 @@
 import * as React from "react";
-import {Icon, Layout, Menu} from 'antd';
+import {Icon, Layout, Menu, notification} from 'antd';
 import 'antd/dist/antd.css';
 //import {Ecore} from "ecore";
-import {API} from './modules/api'
+import {API, Error, IErrorHandler} from './modules/api'
 import {MetaBrowser} from "./components/MetaBrowser";
 import {ResourceEditor} from "./components/ResourceEditor"
 import {Link, Redirect, Route, RouteComponentProps, Switch} from "react-router-dom";
@@ -19,14 +19,15 @@ export interface Props extends RouteComponentProps {
 
 interface State {
     principal?: any;
-    appName: string
 }
 
 export class EcoreApp extends React.Component<any, State> {
 
     constructor(props: any) {
         super(props);
-        this.state = {principal: undefined, appName: props.appName};
+        this.state = {
+            principal: undefined
+        };
     }
 
     onRightMenu(e : any) {
@@ -46,6 +47,28 @@ export class EcoreApp extends React.Component<any, State> {
 
     setPrincipal = (principal: any)=>{
         this.setState({principal}, API.instance().init)
+    };
+
+    componentDidMount(): void {
+        let keyAll: Array<string> = [];
+        let errorHandler : IErrorHandler = {
+            handleError: function (error: Error): void {
+                let key = error.error + error.status + error.message;
+                keyAll.push(key);
+                    notification.error({
+                        message: "Error: " + error.status + " (" + error.error + ")",
+                        duration: 0,
+                        description: error.message,
+                        key,
+                        onClose: () => {
+                            for (let key of keyAll) {
+                                notification.close(key)
+                            }
+                        }
+                    })
+            }
+        } as IErrorHandler;
+        API.instance().addErrorHandler(errorHandler);
     };
 
     render = () => {
