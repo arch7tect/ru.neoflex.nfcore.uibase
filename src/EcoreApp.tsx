@@ -19,15 +19,14 @@ export interface Props extends RouteComponentProps {
 
 interface State {
     principal?: any;
+    appName: string;
 }
 
 export class EcoreApp extends React.Component<any, State> {
 
     constructor(props: any) {
         super(props);
-        this.state = {
-            principal: undefined
-        };
+        this.state = {principal: undefined, appName: props.appName};
     }
 
     onRightMenu(e : any) {
