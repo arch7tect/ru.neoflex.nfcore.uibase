@@ -6,7 +6,6 @@ import {Link} from "react-router-dom";
 import forEach from "lodash/forEach"
 import {FormComponentProps} from "antd/lib/form";
 import {WrappedDataSearch} from "./DataSearch";
-import FormItem from "antd/es/form/FormItem";
 import {WrappedSearchFilter} from "./SearchFilter";
 
 interface Props {
@@ -169,7 +168,7 @@ class SearchGrid extends React.Component<Props & FormComponentProps, State> {
     handleDeleteResource = (event:any, record:any) => {
         const ref:string = `${record.resource.get('uri')}?ref=${record.resource.rev}`;
         ref && API.instance().deleteResource(ref).then((response) => {
-            if(response.result === "ok") this.handleSearch(event)
+            if(response.result === "ok") {/*??????*/}
         });
         event.preventDefault()
     };
@@ -220,13 +219,13 @@ class SearchGrid extends React.Component<Props & FormComponentProps, State> {
             };
             const hasSelected = selectedRowKeys.length > 0;
             return (
-             <Form style={{padding: '20px'}}>
-                 <FormItem>
+             <div style={{padding: '20px'}}>
+                 <div>
                      <WrappedDataSearch onSearch={this.handleSearch}
                                         specialEClass={this.props.specialEClass}
                      />
-                 </FormItem>
-                 <FormItem>
+                 </div>
+                 <div>
                      {this.state.resources.length === 0
                          ?
                          !this.state.notFoundActivator ? '' : 'Not found'
@@ -234,11 +233,11 @@ class SearchGrid extends React.Component<Props & FormComponentProps, State> {
                          this.props.onSelect !== undefined
                              ?
                              <div>
-                                 <FormItem>
+                                 <div>
                                      <Button type="primary" onClick={this.handleSelect} disabled={!hasSelected} style={{width: '100px', fontSize: '17px'}}>
                                          <Icon type="select" />
                                     </Button>
-                                 </FormItem>
+                                 </div>
                                  <Table
                                      scroll={{x: 1300}}
                                      columns={this.props.showAction ? columns.concat(actionColumnDef) : columns}
@@ -257,8 +256,8 @@ class SearchGrid extends React.Component<Props & FormComponentProps, State> {
                                  style={{whiteSpace: "pre"}}
                              />
                      }
-                 </FormItem>
-             </Form>
+                 </div>
+             </div>
             );
         }}
 
