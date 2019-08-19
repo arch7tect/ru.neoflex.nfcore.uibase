@@ -1,14 +1,14 @@
 import * as React from "react";
-import {Button, Col, Icon, Modal, Row, Select, Table, Tree} from 'antd';
-import Ecore, {EObject} from "ecore";
-import {API} from "../modules/api";
+import { Tree, Icon, Table, Modal, Button, Select, Row, Col } from 'antd';
+import Ecore from "ecore";
+import { API } from "../modules/api";
 import Splitter from './CustomSplitter'
 import update from 'immutability-helper';
 //import { any } from "prop-types";
 //import _filter from 'lodash/filter'
 //import _map from 'lodash/map'
 import EditableTextArea from './EditableTextArea'
-import {WrappedSearchGrid} from "./SearchGrid";
+import {WrappedResourceSearch} from "./ResourceSearch";
 
 interface ITargetObject {
     [key: string]: any;
@@ -19,7 +19,7 @@ export interface Props {
 
 interface State {
     resource: Ecore.EObject,
-    resourceJSON: Object,
+    resourceJSON: { [key: string]: any },
     ePackages: Ecore.EPackage[],
     selectedNodeName: string | undefined,
     tableData: Array<any>,
@@ -68,7 +68,7 @@ export class ResourceEditor extends React.Component<any, State> {
     }
 
     /**
-     * Creates updaters for all levels of object, including for objects in arrays.
+     * Creates updaters for all levels of an object, including for objects in arrays.
      */
     nestUpdaters(json: any, parentObject: any = null, property?: String): Object {
 
@@ -165,13 +165,30 @@ export class ResourceEditor extends React.Component<any, State> {
     }
 
     createTree() {
+        const { resourceJSON } = this.state
 
-        function generateNodes(resource: Ecore.EObject): Array<any> {
-            return resource.eContents().map((res, idx) =>
-                <Tree.TreeNode key={res._id} eClass={res} icon={<Icon type="block" />} title={res.eClass.get('name')}>
-                    {res.eContents().length > 0 && generateNodes(res)}
-                </Tree.TreeNode>
-            )
+        const generateNodes = (resource: any, featureName?: string): Array<any> => {
+            if (Array.isArray(resource)) {
+                const resSet = Ecore.ResourceSet.create()
+                return resource.map((object:{[key:string]:any}, idx: Number) => {
+                    return <Tree.TreeNode key={featureName + "." + idx} targetObject={object} icon={<Icon type="block" />} title={resSet.getEObject(object.eClass).get('name')}/>
+                })
+            } else {
+                return resource.get('eAllStructuralFeatures') && resource.get('eAllStructuralFeatures').map((feature: Ecore.EObject, idx: Number) => {
+                    const isContainment = Boolean(feature.get('containment'));
+                    const upperBound = feature.get('upperBound')
+                    if (upperBound === -1 && isContainment) {
+                        const json: { [key: string]: any } = resourceJSON
+                        const targetObject = json[feature.get('name')]
+                        return <Tree.TreeNode array={true} key={feature.get('name') + idx} feature={feature} targetObject={targetObject} icon={<Icon type="block" />} title={feature.get('name')}>
+                            {targetObject && Array.isArray(targetObject) ? generateNodes(targetObject, feature.get('eType').get('name')) : undefined}
+                            {feature.get('eAllStructuralFeatures') && generateNodes(feature)}
+                        </Tree.TreeNode>
+                    }
+                    return null
+                }
+                )
+            }
         }
 
         return (
@@ -182,16 +199,16 @@ export class ResourceEditor extends React.Component<any, State> {
                 onSelect={this.onTreeSelect}
                 onRightClick={this.onRightClick}
             >
-                <Tree.TreeNode style={{ fontWeight: '600' }} icon={<Icon type="cluster" />} title={this.state.resource.eClass.get('name')} key={this.state.resource._id}>
-                    {generateNodes(this.state.resource)}
+                <Tree.TreeNode style={{ fontWeight: '600' }} targetObject={this.state.resourceJSON} icon={<Icon type="cluster" />} title={this.state.resource.eClass.get('name')} key={this.state.resource._id}>
+                    {generateNodes(this.state.resource.eClass)}
                 </Tree.TreeNode>
             </Tree>
         )
     }
 
     onTreeSelect = (selectedKeys: Array<String>, e: any) => {
-        if (selectedKeys[0]) {
-            const targetObject = this.findObjectById(this.state.resourceJSON, selectedKeys[0]);
+        if (selectedKeys[0] && !e.node.props.array) {
+            const targetObject = e.node.props.targetObject
             this.setState({
                 tableData: this.prepareTableData(targetObject, this.state.resource),
                 targetObject: targetObject,
@@ -204,7 +221,7 @@ export class ResourceEditor extends React.Component<any, State> {
         this.setState({ rightClickMenuVisible: true, rightMenuPosition: { x: e.event.clientX, y: e.event.clientY } })
     };
 
-    prepareTableData(targetObject: ITargetObject, resource: EObject): Array<any> {
+    prepareTableData(targetObject: ITargetObject, resource: Ecore.EObject): Array<any> {
 
         const boolSelectionOption: { [key: string]: any } = { "null": null, "true": true, "false": false }
         const getPrimitiveType = (value:string):any => boolSelectionOption[value]
@@ -237,7 +254,7 @@ export class ResourceEditor extends React.Component<any, State> {
                     const preparedData = this.prepareTableData(object, this.state.resource);
                     this.setState({ resourceJSON: nestedJSON, tableData: preparedData })
                 }}>
-                    {eObject.get('eType').eContents().map((obj:EObject)=>
+                    {eObject.get('eType').eContents().map((obj:Ecore.EObject)=>
                         <Select.Option key={eObject.get('name')+"_opt_"+obj.get('name')+"_"+targetObject.id} value={obj.get('name')}>{obj.get('name')}</Select.Option>)}
                 </Select>
             } else {
@@ -254,7 +271,7 @@ export class ResourceEditor extends React.Component<any, State> {
                     }}
                 />
             }
-        };
+        }
 
         const preparedData:Array<Object> = [];
         const featureList = resource.eContainer.getEObject(targetObject._id).eClass.get('eAllStructuralFeatures')
@@ -264,7 +281,7 @@ export class ResourceEditor extends React.Component<any, State> {
                 property: feature.get('name'), 
                 value: prepareValue(feature, targetObject[feature.get('name')], idx), 
                 key: feature.get('name') + idx })
-        });
+        })
 
         return preparedData
     }
@@ -277,9 +294,26 @@ export class ResourceEditor extends React.Component<any, State> {
         this.setState({ modalVisible: false })
     };
 
-    hideRightClickMenu = () =>{
+    hideRightClickMenu = () => {
         this.setState({ rightClickMenuVisible: false })
     };
+
+    renderRightMenu():any {
+        return <div className="right-menu" style={{
+            position: "absolute",
+            display: "inline-block",
+            boxShadow: "2px 2px 8px -1px #cacaca",
+            borderRadius: "4px",
+            height: "100px",
+            width: "100px",
+            left: this.state.rightMenuPosition.x,
+            top: this.state.rightMenuPosition.y,
+            backgroundColor: "#fff",
+            padding: "7px"
+        }}>
+            Pavel
+        </div>
+    }
 
     handleSelect = (resources : Ecore.Resource[]): void => {
         this.setState({ modalVisible: false })
@@ -334,26 +368,13 @@ export class ResourceEditor extends React.Component<any, State> {
                 <Modal
                     width={'1000px'}
                     title="Add resource"
-                    destroyOnClose={true}
-                    maskClosable={true}
                     visible={this.state.modalVisible}
+                    onOk={this.handleModalOk}
                     onCancel={this.handleModalCancel}
-                    footer={false}
                 >
-                    <WrappedSearchGrid onSelect={this.handleSelect} showAction={false} specialEClass={undefined}/>
+                    <WrappedResourceSearch onSelect={this.handleSelect}/>
                 </Modal>
-                {this.state.rightClickMenuVisible && <div className="right-menu" style={{
-                    position: "absolute",
-                    display: "inline-block",
-                    boxShadow: "2px 2px 8px -1px #cacaca",
-                    borderRadius: "4px",
-                    height: "100px",
-                    width: "100px",
-                    left: this.state.rightMenuPosition.x,
-                    top: this.state.rightMenuPosition.y,
-                    backgroundColor: "#fff",
-                    padding: "7px"
-                }}>Pavel</div>}
+                {this.state.rightClickMenuVisible && this.renderRightMenu()}
             </div>
         );
     }
