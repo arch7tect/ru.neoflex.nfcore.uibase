@@ -1,5 +1,5 @@
 import * as React from "react";
-import {Icon, Layout, Menu, notification} from 'antd';
+import {Button, Icon, Layout, Menu, notification} from 'antd';
 import 'antd/dist/antd.css';
 //import {Ecore} from "ecore";
 import {API, Error, IErrorHandler} from './modules/api'
@@ -49,21 +49,18 @@ export class EcoreApp extends React.Component<any, State> {
     };
 
     componentDidMount(): void {
-        let keyAll: Array<string> = [];
         let errorHandler : IErrorHandler = {
             handleError: function (error: Error): void {
+                let btn = (<Button type="link" size="small" onClick={() => notification.destroy()}>
+                    Close All
+                </Button>);
                 let key = error.error + error.status + error.message;
-                keyAll.push(key);
                     notification.error({
                         message: "Error: " + error.status + " (" + error.error + ")",
+                        btn,
                         duration: 0,
                         description: error.message,
-                        key,
-                        onClose: () => {
-                            for (let key of keyAll) {
-                                notification.close(key)
-                            }
-                        }
+                        key
                     })
             }
         } as IErrorHandler;
