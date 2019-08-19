@@ -25,6 +25,7 @@ interface State {
 }
 
 class SearchGrid extends React.Component<Props & FormComponentProps, State> {
+    private refDataSearchRef: React.RefObject<any> = React.createRef();
 
     state = {
         resources: [],
@@ -145,18 +146,6 @@ class SearchGrid extends React.Component<Props & FormComponentProps, State> {
         } else return 0;
     };
 
-    filterColumns = (name: string): Array<any> => {
-        const result: Array<any> = [];
-        const tableData: Array<any> = this.state.tableDataFilter.length === 0 ?
-                this.state.tableData : this.state.tableDataFilter;
-        for (let td of tableData){
-            if (td[name] !== undefined && result.every((value) => value.text !== td[name])) {
-                result.push({ text: td[name], value: td[name] })
-            }
-        }
-        return result.sort((a: any, b: any) => this.sortColumns(a, b, "text", "stringType"));
-    };
-
     handleSelect = () => {
         if (this.props.onSelect) {
             this.props.onSelect(
@@ -168,7 +157,9 @@ class SearchGrid extends React.Component<Props & FormComponentProps, State> {
     handleDeleteResource = (event:any, record:any) => {
         const ref:string = `${record.resource.get('uri')}?ref=${record.resource.rev}`;
         ref && API.instance().deleteResource(ref).then((response) => {
-            if(response.result === "ok") {/*??????*/}
+            if (response.result === "ok") {
+                this.refDataSearchRef.current.refs.wrappedComponent.refresh();
+            }
         });
         event.preventDefault()
     };
@@ -219,10 +210,12 @@ class SearchGrid extends React.Component<Props & FormComponentProps, State> {
             };
             const hasSelected = selectedRowKeys.length > 0;
             return (
+
              <div style={{padding: '20px'}}>
                  <div>
                      <WrappedDataSearch onSearch={this.handleSearch}
                                         specialEClass={this.props.specialEClass}
+                                        ref={this.refDataSearchRef}
                      />
                  </div>
                  <div>
