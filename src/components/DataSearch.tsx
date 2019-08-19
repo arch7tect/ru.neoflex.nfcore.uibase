@@ -23,6 +23,7 @@ interface State {
 }
 
 class DataSearch extends React.Component<Props & FormComponentProps, State> {
+
     state = {
         classes: [],
         indicatorError: false
@@ -30,11 +31,15 @@ class DataSearch extends React.Component<Props & FormComponentProps, State> {
 
     handleSubmit = (e: any) => {
         e.preventDefault();
+        this.refresh();
+    };
+
+    refresh = () => {
         this.props.form.validateFields((err: any, values: any) => {
             if (!err) {
                 this.setState({indicatorError: false});
                 let selectedClassObject: Ecore.EClass | undefined;
-                if (this.props.specialEClass === undefined ) {
+                if (this.props.specialEClass === undefined) {
                     selectedClassObject = this.state.classes.find((c: Ecore.EClass) => c.eContainer.get('name') + "." + c.get('name') === values.selectEClass);
                 } else {
                     selectedClassObject = this.props.specialEClass
@@ -55,8 +60,8 @@ class DataSearch extends React.Component<Props & FormComponentProps, State> {
                         (selectedClassObject && API.instance().findByKindAndName(selectedClassObject as Ecore.EClass, values.name)
                             .then((resources) => {
                                 this.props.onSearch(resources)
-                            }))}
-            else this.setState({indicatorError: true})
+                            }))
+            } else this.setState({indicatorError: true})
         });
     };
 
@@ -180,4 +185,5 @@ class DataSearch extends React.Component<Props & FormComponentProps, State> {
     }
 }
 
-export const WrappedDataSearch = Form.create<Props & FormComponentProps>()(DataSearch);
+export const WrappedDataSearch = Form.create<Props & FormComponentProps>({withRef: true})(DataSearch);
+
