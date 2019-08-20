@@ -10,10 +10,6 @@ import update from 'immutability-helper';
 import EditableTextArea from './EditableTextArea'
 import {WrappedResourceSearch} from "./ResourceSearch";
 
-interface ITargetObject {
-    [key: string]: any;
-}
-
 export interface Props {
 }
 
@@ -167,21 +163,22 @@ export class ResourceEditor extends React.Component<any, State> {
     createTree() {
         const { resourceJSON } = this.state
 
-        const generateNodes = (resource: any, featureName?: string): Array<any> => {
-            if (Array.isArray(resource)) {
+        const generateNodes = (data: any, feature?: any): Array<any> => {
+            if (Array.isArray(data)) {
                 const resSet = Ecore.ResourceSet.create()
-                return resource.map((object:{[key:string]:any}, idx: Number) => {
-                    return <Tree.TreeNode key={featureName + "." + idx} targetObject={object} icon={<Icon type="block" />} title={resSet.getEObject(object.eClass).get('name')}/>
+                return data.map((object:{[key:string]:any}, idx: Number) => {
+                    return <Tree.TreeNode key={feature.get('eType').get('name') + "." + idx} eClass={object.eClass ? object.eClass : feature.get('eType').eURI()} 
+                        targetObject={object} icon={<Icon type="block" />} title={resSet.getEObject(object.eClass).get('name')}/>
                 })
             } else {
-                return resource.get('eAllStructuralFeatures') && resource.get('eAllStructuralFeatures').map((feature: Ecore.EObject, idx: Number) => {
+                return data.get('eAllStructuralFeatures') && data.get('eAllStructuralFeatures').map((feature: Ecore.EObject, idx: Number) => {
                     const isContainment = Boolean(feature.get('containment'));
                     const upperBound = feature.get('upperBound')
                     if (upperBound === -1 && isContainment) {
                         const json: { [key: string]: any } = resourceJSON
                         const targetObject = json[feature.get('name')]
-                        return <Tree.TreeNode array={true} key={feature.get('name') + idx} feature={feature} targetObject={targetObject} icon={<Icon type="block" />} title={feature.get('name')}>
-                            {targetObject && Array.isArray(targetObject) ? generateNodes(targetObject, feature.get('eType').get('name')) : undefined}
+                        return <Tree.TreeNode array={true} key={feature.get('name') + idx} eClass={feature.get('eType').eURI()} targetObject={targetObject} icon={<Icon type="block" />} title={feature.get('name')}>
+                            {targetObject && Array.isArray(targetObject) ? generateNodes(targetObject, feature) : undefined}
                             {feature.get('eAllStructuralFeatures') && generateNodes(feature)}
                         </Tree.TreeNode>
                     }
@@ -199,7 +196,7 @@ export class ResourceEditor extends React.Component<any, State> {
                 onSelect={this.onTreeSelect}
                 onRightClick={this.onRightClick}
             >
-                <Tree.TreeNode style={{ fontWeight: '600' }} targetObject={this.state.resourceJSON} icon={<Icon type="cluster" />} title={this.state.resource.eClass.get('name')} key={this.state.resource._id}>
+                <Tree.TreeNode style={{ fontWeight: '600' }} eClass={this.state.resource.eClass.eURI()} targetObject={this.state.resourceJSON} icon={<Icon type="cluster" />} title={this.state.resource.eClass.get('name')} key={this.state.resource._id}>
                     {generateNodes(this.state.resource.eClass)}
                 </Tree.TreeNode>
             </Tree>
@@ -209,19 +206,30 @@ export class ResourceEditor extends React.Component<any, State> {
     onTreeSelect = (selectedKeys: Array<String>, e: any) => {
         if (selectedKeys[0] && !e.node.props.array) {
             const targetObject = e.node.props.targetObject
+            const key = e.node.props.eventKey
             this.setState({
-                tableData: this.prepareTableData(targetObject, this.state.resource),
+                tableData: this.prepareTableData(targetObject, this.state.resource, key),
                 targetObject: targetObject,
+                selectedKey: selectedKeys[0]
+            })
+        }else{
+            this.setState({
+                tableData: [],
+                targetObject: e.node.props.targetObject,
                 selectedKey: selectedKeys[0]
             })
         }
     };
 
     onRightClick = (e:any) => {
+        //const eClass = e.node.props.eClass
+        //const eObject = Ecore.ResourceSet.create().getEObject(eClass)
+        //const siblings = Ecore.Edit.siblingTypes(eObject, null); 
+        //eObject.get('eAllSubTypes')
         this.setState({ rightClickMenuVisible: true, rightMenuPosition: { x: e.event.clientX, y: e.event.clientY } })
     };
 
-    prepareTableData(targetObject: ITargetObject, resource: Ecore.EObject): Array<any> {
+    prepareTableData(targetObject: {[key: string]: any;}, resource: Ecore.EObject, key: String): Array<any> {
 
         const boolSelectionOption: { [key: string]: any } = { "null": null, "true": true, "false": false }
         const getPrimitiveType = (value:string):any => boolSelectionOption[value]
@@ -230,43 +238,43 @@ export class ResourceEditor extends React.Component<any, State> {
         const prepareValue = (eObject: Ecore.EObject, value: any, idx:Number): any => {
             if (eObject.isKindOf('EReference')) {
                 const elements = value ? value.map((el: Object, idx: number) => <React.Fragment key={idx}>{JSON.stringify(el)}<br /></React.Fragment>) : []
-                const component = <React.Fragment key={eObject.get('name')+"_"+targetObject.id}>
+                const component = <React.Fragment key={key+"_"+idx}>
                     {elements}
-                    <Button key={eObject.get('name')+"_"+targetObject.id} onClick={()=>this.setState({ modalVisible: true })}>...</Button>
+                    <Button key={key+"_"+idx} onClick={()=>this.setState({ modalVisible: true })}>...</Button>
                 </React.Fragment>
                 return component
             } else if (eObject.get('eType').isKindOf('EDataType') && eObject.get('eType').get('name') === "EBoolean") {
-                return <Select value={convertPrimitiveToString(value)} key={eObject.get('name')+"_bool_"+targetObject.id} style={{ width: "300px" }} onChange={(newValue: any) => {
+                return <Select value={convertPrimitiveToString(value)} key={key+"_"+idx} style={{ width: "300px" }} onChange={(newValue: any) => {
                         const updatedJSON = targetObject.updater({ [eObject.get('name')]: getPrimitiveType(newValue) });
                         const nestedJSON = this.nestUpdaters(updatedJSON, null);
                         const object = this.findObjectById(nestedJSON, targetObject._id);
-                        const preparedData = this.prepareTableData(object, this.state.resource);
+                        const preparedData = this.prepareTableData(object, this.state.resource, key);
                         this.setState({ resourceJSON: nestedJSON, tableData: preparedData })
                     }}>
                         {Object.keys(boolSelectionOption).map((value:any)=>
-                            <Select.Option key={eObject.get('name')+"_opt_"+value+"_"+targetObject.id} value={value}>{value}</Select.Option>)}
+                            <Select.Option key={key+"_"+value+"_"+key} value={value}>{value}</Select.Option>)}
                 </Select>
             } else if (eObject.get('eType').isKindOf('EEnum')){
-                return <Select value={value} key={eObject.get('name')+"_enum_"+targetObject.id} style={{ width: "300px" }} onChange={(newValue: any) => {
+                return <Select value={value} key={key+"_"+idx} style={{ width: "300px" }} onChange={(newValue: any) => {
                     const updatedJSON = targetObject.updater({ [eObject.get('name')]: newValue });
                     const nestedJSON = this.nestUpdaters(updatedJSON, null);
                     const object = this.findObjectById(nestedJSON, targetObject._id);
-                    const preparedData = this.prepareTableData(object, this.state.resource);
+                    const preparedData = this.prepareTableData(object, this.state.resource, key);
                     this.setState({ resourceJSON: nestedJSON, tableData: preparedData })
                 }}>
                     {eObject.get('eType').eContents().map((obj:Ecore.EObject)=>
-                        <Select.Option key={eObject.get('name')+"_opt_"+obj.get('name')+"_"+targetObject.id} value={obj.get('name')}>{obj.get('name')}</Select.Option>)}
+                        <Select.Option key={key+"_opt_"+obj.get('name')+"_"+targetObject.id} value={obj.get('name')}>{obj.get('name')}</Select.Option>)}
                 </Select>
             } else {
                 return <EditableTextArea
-                    key={eObject.get('name')+"_textarea"}
+                    key={key+"_"+idx}
                     editedProperty={eObject.get('name')}
                     value={value}
                     onChange={(newValue: Object) => {
                         const updatedJSON = targetObject.updater(newValue);
                         const nestedJSON = this.nestUpdaters(updatedJSON, null);
                         const object = this.findObjectById(nestedJSON, targetObject._id);
-                        const preparedData = this.prepareTableData(object, this.state.resource);
+                        const preparedData = this.prepareTableData(object, this.state.resource, key);
                         this.setState({ resourceJSON: nestedJSON, tableData: preparedData })
                     }}
                 />
@@ -294,7 +302,7 @@ export class ResourceEditor extends React.Component<any, State> {
         this.setState({ modalVisible: false })
     };
 
-    hideRightClickMenu = () => {
+    hideRightClickMenu = (e:any) => {
         this.setState({ rightClickMenuVisible: false })
     };
 
