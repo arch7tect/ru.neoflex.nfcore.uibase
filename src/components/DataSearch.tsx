@@ -185,5 +185,5 @@ class DataSearch extends React.Component<Props & FormComponentProps, State> {
     }
 }
 
-export const WrappedDataSearch = Form.create<Props & FormComponentProps>({withRef: true})(DataSearch);
+export const WrappedDataSearch = Form.create<Props & FormComponentProps>()(DataSearch);
 

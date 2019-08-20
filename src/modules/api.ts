@@ -49,7 +49,7 @@ export class API implements IErrorHandler {
     init = () => {
         this.ePackagesPromise = undefined;
         this.fetchPackages();
-    }
+    };
 
     private reportError(error: Error): void {
         this.errorHandlers.forEach(h => h.handleError(error))
@@ -89,20 +89,38 @@ export class API implements IErrorHandler {
             }
             return response
         }).catch((error) => {
-            if (error instanceof Error) {
-                this.reportError(error)
-            } else if (error instanceof Response) {
-                let response = error as Response;
-                response.json().then(json => {
-                    this.reportError(new Error(Object.assign({}, json, {cause: response})));
-                }).catch(error => {
-                    this.reportError(Error.fromResponce(response));
-                })
-            } else {
-                this.reportError(new Error(Object.assign({}, error, {cause: error})));
+            this.catchFetchError(error);
+            return Promise.reject(error)
+        });
+    }
+
+    fetchFirstAuthenticate(input: RequestInfo, init?: RequestInit): Promise<any> {
+        return fetch(input, init).then(response => {
+            if (!response.ok) {
+                throw response;
+            }
+            return response
+        }).catch((error) => {
+            if (error.status !== 401) {
+                this.catchFetchError(error)
             }
             return Promise.reject(error)
         });
+    }
+
+    private catchFetchError(error: any) {
+        if (error instanceof Error) {
+            this.reportError(error)
+        } else if (error instanceof Response) {
+            let response = error as Response;
+            response.json().then(json => {
+                this.reportError(new Error(Object.assign({}, json, {cause: response})));
+            }).catch(error => {
+                this.reportError(Error.fromResponce(response))
+            })
+        } else {
+            this.reportError(new Error(Object.assign({}, error, {cause: error})));
+        }
     }
 
     static collectReferences(object: any, found: Set<string>): Set<string> {
@@ -312,7 +330,7 @@ export class API implements IErrorHandler {
 
     authenticate(login : any, password : any) {
         if (login === undefined) {
-            return this.fetch('/system/user', this.getOpts({}))
+            return this.fetchFirstAuthenticate('/system/user', this.getOpts({}))
                 .then(response => response.json())
         } else {
             return this.fetch('/system/user', this.getOpts({
@@ -320,7 +338,7 @@ export class API implements IErrorHandler {
                 headers: {
                     'Authorization': "Basic " + btoa(login + ":" + password)
                 }
-            })).then(response => response.json());
+            })).then(response => response.json())
         }
     }
 
@@ -328,6 +346,6 @@ export class API implements IErrorHandler {
         return this.fetch('/logout', this.getOpts({
             method: "POST"
         }))
-
     }
+
 }

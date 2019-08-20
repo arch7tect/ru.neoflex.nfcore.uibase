@@ -25,7 +25,7 @@ interface State {
 }
 
 class SearchGrid extends React.Component<Props & FormComponentProps, State> {
-    private refDataSearchRef: React.RefObject<any> = React.createRef();
+    private refDataSearchRef: any = React.createRef();
 
     state = {
         resources: [],
@@ -158,7 +158,7 @@ class SearchGrid extends React.Component<Props & FormComponentProps, State> {
         const ref:string = `${record.resource.get('uri')}?ref=${record.resource.rev}`;
         ref && API.instance().deleteResource(ref).then((response) => {
             if (response.result === "ok") {
-                this.refDataSearchRef.current.refs.wrappedComponent.refresh();
+                this.refDataSearchRef.refresh();
             }
         });
         event.preventDefault()
@@ -215,7 +215,8 @@ class SearchGrid extends React.Component<Props & FormComponentProps, State> {
                  <div>
                      <WrappedDataSearch onSearch={this.handleSearch}
                                         specialEClass={this.props.specialEClass}
-                                        ref={this.refDataSearchRef}
+                                        wrappedComponentRef={(inst: any) => this.refDataSearchRef = inst}
+
                      />
                  </div>
                  <div>
