@@ -335,11 +335,11 @@ export class ResourceEditor extends React.Component<any, State> {
             padding: "7px",
             lineHeight: 2
         }}>
-            {allSubTypes.map((type:Ecore.EObject) => 
+            {allSubTypes.map((type:Ecore.EObject, idx:Number) => 
                 type.get('abstract') ? 
                     undefined 
                 : 
-                    <button className="menu-button" onClick={this.handleAddChild}>
+                    <button key={"menu_"+idx} className="menu-button" onClick={this.handleAddChild}>
                         {type.get('name')}
                     </button>)}
             <button className="menu-delete-button" style={{borderTop: allSubTypes.length > 0 ? "1px solid #f2f2f2" : ""}}>Delete</button>
