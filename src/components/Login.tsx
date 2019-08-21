@@ -80,7 +80,7 @@ export class Login extends React.Component<Props, State> {
                                     onKeyUp={this.authenticateIfEnterPress}
                                 />
                                 <button key="conbutton" className="custom-button"
-                                        onClick={this.authenticate}>Sign in
+                                        onClick={this.authenticate}>Login
                                 </button>
                             </div>
                         </Content>

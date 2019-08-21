@@ -49,8 +49,13 @@ export class EcoreApp extends React.Component<any, State> {
     };
 
     componentDidMount(): void {
+        const _this = this;
         let errorHandler : IErrorHandler = {
-            handleError: function (error: Error): void {
+            handleError(error: Error): void {
+                if (error.status === 401) {
+                    _this.setState({principal: undefined});
+                    // return
+                }
                 let btn = (<Button type="link" size="small" onClick={() => notification.destroy()}>
                     Close All
                 </Button>);
@@ -134,7 +139,7 @@ export class EcoreApp extends React.Component<any, State> {
 
     renderStartPage = ()=>{
         return (
-            <MainApp {...this.props}></MainApp>
+            <MainApp {...this.props}/>
         )
     }
 }
