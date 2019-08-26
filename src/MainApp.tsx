@@ -3,7 +3,9 @@ import Splitter from './components/CustomSplitter'
 import {Tooltip} from "antd";
 import {Icon as IconFA} from 'react-fa';
 import './MainApp.css'
-
+import {API} from "./modules/api";
+import Ecore from "ecore"
+import {ViewRegistry, ViewFactory} from './ViewRegistry'
 
 const FooterHeight = '2em'
 
@@ -11,15 +13,32 @@ interface State {
     appName: string
     hideReferences: boolean
     currentTool?: string
+    application?: Ecore.EObject
 }
 
 export class MainApp extends React.Component<any, State> {
     private refSplitterRef: React.RefObject<any> = React.createRef()
     private toolsSplitterRef: React.RefObject<any> = React.createRef()
+    private viewFactory: ViewFactory = ViewRegistry.INSTANCE.get('antd')
 
     constructor(props: any) {
         super(props)
-        this.state = {appName: props.appName, hideReferences: false}
+        this.state = {appName: props.appName, hideReferences: false, application: undefined}
+    }
+
+    componentDidMount(): void {
+        API.instance().fetchPackages().then(packages=>{
+            const ePackage = packages.find(p=>p.get("nsURI") === "ru.neoflex.nfcore.application");
+            if (ePackage) {
+                const eClass = ePackage.eContents().find(c=>c.get("name") === "Application") as Ecore.EClass
+                API.instance().findByKindAndName(eClass, this.state.appName).then(resources => {
+                    if (resources.length > 0) {
+                        const application = resources[0].eContents()[0]
+                        this.setState({application})
+                    }
+                })
+            }
+        })
     }
 
     renderToolButton=(name: string, label: string, icon: string)=>{
@@ -49,7 +68,8 @@ export class MainApp extends React.Component<any, State> {
     }
 
     renderContent = () => {
-        return this.state.appName
+        if (!this.state.application) return null
+        return this.viewFactory.createView(this.state.application, this.props)
     }
 
     renderReferences = () => {
