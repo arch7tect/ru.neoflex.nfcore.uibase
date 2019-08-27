@@ -12,6 +12,7 @@ import Login from "./components/Login";
 import {DataBrowser} from "./components/DataBrowser";
 import {MainApp} from "./MainApp";
 import {withTranslation} from "react-i18next";
+import Ecore, {EObject} from "ecore";
 
 const MetaBrowserNew = withTranslation()(MetaBrowser);
 const { Header, Content, Sider } = Layout;
@@ -23,13 +24,15 @@ export interface Props extends RouteComponentProps {
 interface State {
     principal?: any;
     appName: string;
+    languages: string[];
+    selectLanguage: string;
 }
 
 export class EcoreApp extends React.Component<any, State> {
 
     constructor(props: any) {
         super(props);
-        this.state = {principal: undefined, appName: props.appName};
+        this.state = {principal: undefined, appName: props.appName, languages: [], selectLanguage: ''};
     }
 
     onRightMenu(e : any) {
@@ -50,6 +53,27 @@ export class EcoreApp extends React.Component<any, State> {
     setPrincipal = (principal: any)=>{
         this.setState({principal}, API.instance().init)
     };
+
+    getLanguages() {
+        const prepared: Array<string> = [];
+        API.instance().fetchAllClasses(false).then(classes => {
+            const temp = classes.find((c: EObject) => c._id === "//Lang");
+            API.instance().findByKindAndRegexp(temp as Ecore.EClass, "")
+                .then((resources) => {
+                    resources.forEach((res: Ecore.Resource) => {
+                        if (res.to().length === undefined) {
+                            const row = {...res.to(), resource: res};
+                            if (row.hasOwnProperty("children")) {
+                                row["_children"] = row["children"];
+                                delete row["children"]
+                            }
+                            prepared.push(row.name);
+                        }
+                    });
+                    this.setState({languages: prepared})
+                })
+        });
+    }
 
     componentDidMount(): void {
         const _this = this;
@@ -75,6 +99,7 @@ export class EcoreApp extends React.Component<any, State> {
     };
 
     render = () => {
+        if (!this.state.languages.length) {this.getLanguages()}
         return (
                 <Layout>
                     {this.state.principal === undefined ?
@@ -104,9 +129,14 @@ export class EcoreApp extends React.Component<any, State> {
                             <Menu.Item key={'logout'}><Icon type="logout" style={{fontSize: '17px'}}/>Logout</Menu.Item>
                             <Menu.Item key={'developer'}><Icon type="setting" style={{fontSize: '17px'}} theme="filled"/>Developer</Menu.Item>
                             <Menu.Item key={'app'}><Icon type="sketch" style={{fontSize: '17px'}}/>App</Menu.Item>
-                            <Menu.SubMenu title={<span><Icon type="global" style={{fontSize: '17px'}}/>Language</span>}>
-                                <Menu.Item key={'en'}>EN</Menu.Item>
-                                <Menu.Item key={'ru'}>RU</Menu.Item>
+                            <Menu.SubMenu  title={<span><Icon type="global" style={{fontSize: '17px'}}/>Language</span>}>
+                                {
+                                    this.state.languages.map((c: any) =>
+                                        <Menu.Item key={c} onClick={() => this.setState({selectLanguage: c})}>
+                                            <Icon type="flag" style={{fontSize: '17px'}}/>
+                                            {c.toUpperCase()}
+                                        </Menu.Item>)
+                                }
                             </Menu.SubMenu>
                         </Menu.SubMenu>
                     </Menu>
