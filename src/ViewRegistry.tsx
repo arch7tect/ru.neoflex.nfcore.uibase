@@ -1,29 +1,6 @@
 
-import Ecore from 'ecore'
-import * as React from "react";
-import antdFactory from './AntdFactory'
-
-export class View extends React.Component<any, any> {
-    protected viewObject: Ecore.EObject
-    protected viewFactory: ViewFactory
-
-    setViewObject(eObject: Ecore.EObject) {
-        this.viewObject = eObject
-    }
-
-    setViewFactory(viewFactory: ViewFactory) {
-        this.viewFactory = viewFactory
-    }
-
-    render = () => {
-        return <span>{this.viewObject.eResource().to()}</span>
-    }
-}
-
-export interface ViewFactory {
-    createView(viewObject: Ecore.EObject, props: any): View;
-    name: string;
-}
+import AntdFactory from './AntdFactory'
+import {ViewFactory} from './View'
 
 export class ViewRegistry {
     static INSTANCE = new ViewRegistry()
@@ -41,14 +18,4 @@ export class ViewRegistry {
 }
 
 
-export class ViewContainer extends View {
-    renderChildren = () => {
-        const children = this.viewObject.get("children") as Ecore.EObject[]
-        return children.map(c=>this.viewFactory.createView(c, this.props).render())
-    }
-    render = () => {
-        return <div>{this.renderChildren()}</div>
-    }
-}
-
-ViewRegistry.INSTANCE.register(antdFactory)
+ViewRegistry.INSTANCE.register(AntdFactory)

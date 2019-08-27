@@ -5,7 +5,7 @@ import {Icon as IconFA} from 'react-fa';
 import './MainApp.css'
 import {API} from "./modules/api";
 import Ecore from "ecore"
-import {ViewRegistry, ViewFactory} from './ViewRegistry'
+import {ViewRegistry} from './ViewRegistry'
 
 const FooterHeight = '2em'
 
@@ -19,7 +19,7 @@ interface State {
 export class MainApp extends React.Component<any, State> {
     private refSplitterRef: React.RefObject<any> = React.createRef()
     private toolsSplitterRef: React.RefObject<any> = React.createRef()
-    private viewFactory: ViewFactory = ViewRegistry.INSTANCE.get('antd')
+    private viewFactory = ViewRegistry.INSTANCE.get('antd')
 
     constructor(props: any) {
         super(props)
