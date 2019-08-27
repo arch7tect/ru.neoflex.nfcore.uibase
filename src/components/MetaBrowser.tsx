@@ -1,7 +1,8 @@
 import * as React from "react";
-import {Col, Row, Table} from 'antd';
+import {Button, Col, Row, Table} from 'antd';
 import Ecore from "ecore"
 import {API} from "../modules/api";
+import {WithTranslation} from "react-i18next";
 
 export interface Props {
 }
@@ -10,7 +11,7 @@ interface State {
     ePackages: Ecore.EPackage[];
 }
 
-export class MetaBrowser extends React.Component<Props, State> {
+export class MetaBrowser extends React.Component<Props & WithTranslation, State> {
     state = {ePackages: Ecore.EPackage.Registry.ePackages()};
 
     componentDidMount(): void {
@@ -133,12 +134,22 @@ export class MetaBrowser extends React.Component<Props, State> {
                 }
             }
         }
+        const { t, i18n } = this.props;
+        const setLang = (lng: any) => {
+            i18n.changeLanguage(lng);
+        };
         return (
             <Row>
+                <div>
+                    <Button onClick={() => {
+                        i18n.language === ('ru') ? setLang('en') : setLang('ru')}}>
+                        {i18n.language}
+                    </Button>
+                </div>
                 <Col span={1}/>
                 <Col span={22}>
                     <Table dataSource={data} pagination={false}>
-                        <Table.Column title="Name" dataIndex="name" key="name"/>
+                        <Table.Column title={t("name")} dataIndex="name" key="name"/>
                         <Table.Column title="Type" dataIndex="type" key="type"/>
                         <Table.Column title="URI" dataIndex="key" key="key"/>
                     </Table>
