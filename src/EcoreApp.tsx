@@ -1,4 +1,5 @@
 import * as React from "react";
+import {Suspense} from "react";
 import {Button, Icon, Layout, Menu, notification} from 'antd';
 import 'antd/dist/antd.css';
 //import {Ecore} from "ecore";
@@ -7,10 +8,12 @@ import {MetaBrowser} from "./components/MetaBrowser";
 import {ResourceEditor} from "./components/ResourceEditor"
 import {Link, Redirect, Route, RouteComponentProps, Switch} from "react-router-dom";
 import {QueryRunner} from "./components/QueryRunner";
-import {Login} from "./components/Login";
+import Login from "./components/Login";
 import {DataBrowser} from "./components/DataBrowser";
 import {MainApp} from "./MainApp";
+import {withTranslation} from "react-i18next";
 
+const MetaBrowserNew = withTranslation()(MetaBrowser);
 const { Header, Content, Sider } = Layout;
 
 export interface Props extends RouteComponentProps {
@@ -54,7 +57,6 @@ export class EcoreApp extends React.Component<any, State> {
             handleError(error: Error): void {
                 if (error.status === 401) {
                     _this.setState({principal: undefined});
-                    // return
                 }
                 let btn = (<Button type="link" size="small" onClick={() => notification.destroy()}>
                     Close All
@@ -74,17 +76,21 @@ export class EcoreApp extends React.Component<any, State> {
 
     render = () => {
         return (
-            <Layout>
-                {this.state.principal === undefined ?
-                    <Layout>
-                        <Login onLoginSucceed={this.setPrincipal}/>
-                    </Layout>
-                    :
-                    <Layout>
-                        {this.renderDev()}
-                    </Layout>
-                }
-            </Layout>
+                <Layout>
+                    {this.state.principal === undefined ?
+                        <Layout>
+                            <Suspense fallback={<div className="loader"/>}>
+                                <Login onLoginSucceed={this.setPrincipal}/>
+                            </Suspense>
+                        </Layout>
+                        :
+                        <Layout>
+                            <Suspense fallback={<div className="loader"/>}>
+                                {this.renderDev()}
+                            </Suspense>
+                        </Layout>
+                    }
+                </Layout>
         )
     };
 
@@ -98,6 +104,10 @@ export class EcoreApp extends React.Component<any, State> {
                             <Menu.Item key={'logout'}><Icon type="logout" style={{fontSize: '17px'}}/>Logout</Menu.Item>
                             <Menu.Item key={'developer'}><Icon type="setting" style={{fontSize: '17px'}} theme="filled"/>Developer</Menu.Item>
                             <Menu.Item key={'app'}><Icon type="sketch" style={{fontSize: '17px'}}/>App</Menu.Item>
+                            <Menu.SubMenu title={<span><Icon type="global" style={{fontSize: '17px'}}/>Language</span>}>
+                                <Menu.Item key={'en'}>EN</Menu.Item>
+                                <Menu.Item key={'ru'}>RU</Menu.Item>
+                            </Menu.SubMenu>
                         </Menu.SubMenu>
                     </Menu>
                 </Header>
@@ -126,7 +136,7 @@ export class EcoreApp extends React.Component<any, State> {
                 <Layout>
                     <Content>
                         <Switch>
-                            <Route path='/settings/metadata' component={MetaBrowser}/>
+                            <Route path='/settings/metadata' component={MetaBrowserNew}/>
                             <Route exact={true} path='/settings/data' component={DataBrowser}/>
                             <Route path='/settings/data/:id/:ref' component={ResourceEditor}/>
                             <Route path='/settings/query' component={QueryRunner}/>
