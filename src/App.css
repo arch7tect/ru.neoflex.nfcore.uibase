@@ -127,3 +127,24 @@
     transform: rotate(360deg);
   }
 }
+
+/* Resource editor */
+.menu-button {
+  border: none;
+  background: none;
+  text-align: left;
+}
+
+.menu-button:hover {
+  background:#cbf7fe;
+}
+
+.menu-delete-button {
+  border: none;
+  background: none;
+  text-align: left;
+}
+
+.menu-delete-button:hover {
+  background:#ff6868;
+}
