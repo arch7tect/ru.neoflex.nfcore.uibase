@@ -1,14 +1,14 @@
 import * as React from "react";
-import { Tree, Icon, Table, Modal, Button, Select, Row, Col } from 'antd';
+import {Button, Col, Icon, Modal, Row, Select, Table, Tree} from 'antd';
 import Ecore from "ecore";
-import { API } from "../modules/api";
+import {API} from "../modules/api";
 import Splitter from './CustomSplitter'
 import update from 'immutability-helper';
 //import { any } from "prop-types";
 //import _filter from 'lodash/filter'
 //import _map from 'lodash/map'
 import EditableTextArea from './EditableTextArea'
-import {WrappedResourceSearch} from "./ResourceSearch";
+import ResourceSearchTrans from "./ResourceSearch";
 
 export interface Props {
 }
@@ -420,7 +420,7 @@ export class ResourceEditor extends React.Component<any, State> {
                     onOk={this.handleModalOk}
                     onCancel={this.handleModalCancel}
                 >
-                    <WrappedResourceSearch onSelect={this.handleSelect}/>
+                    <ResourceSearchTrans onSelect={this.handleSelect}/>
                 </Modal>
                 {this.state.rightClickMenuVisible && this.renderRightMenu()}
             </div>

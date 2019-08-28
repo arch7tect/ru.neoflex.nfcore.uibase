@@ -2,10 +2,11 @@ import * as React from "react";
 import {Button, Table} from 'antd';
 import Ecore from "ecore";
 import forEach from "lodash/forEach"
-import {WrappedDataSearch} from "./DataSearch";
+import DataSearchTrans from "./DataSearch";
 import Form from "antd/es/form";
 import {FormComponentProps} from 'antd/lib/form/Form';
 import 'brace/theme/tomorrow';
+import {withTranslation, WithTranslation} from "react-i18next";
 
 interface Props {
     onSelect: (resources: Ecore.Resource[]) => void;
@@ -21,7 +22,7 @@ interface State {
     loading: boolean;
 }
 
-class ResourceSearch extends React.Component<Props & FormComponentProps, State> {
+class ResourceSearch extends React.Component<Props & FormComponentProps & WithTranslation, State> {
     state = {
         resources: [],
         columns: [],
@@ -76,7 +77,7 @@ class ResourceSearch extends React.Component<Props & FormComponentProps, State> 
         const hasSelected = selectedRowKeys.length > 0;
         return (
             <div className="view-box">
-                <WrappedDataSearch onSearch={this.handleSearch}/>
+                <DataSearchTrans onSearch={this.handleSearch}/>
                 {this.state.resources.length === 0
                     ?
                     !this.state.notFoundActivator ? '' : 'Not found'
@@ -97,4 +98,7 @@ class ResourceSearch extends React.Component<Props & FormComponentProps, State> 
         );
     }}
 
-export const WrappedResourceSearch = Form.create<Props & FormComponentProps>()(ResourceSearch);
+const WrappedResourceSearch = Form.create<Props & FormComponentProps & WithTranslation>()(ResourceSearch);
+const ResourceSearchTrans = withTranslation()(WrappedResourceSearch);
+export default ResourceSearchTrans;
+

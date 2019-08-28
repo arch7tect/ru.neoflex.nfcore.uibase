@@ -5,8 +5,9 @@ import {API} from "../modules/api";
 import {Link} from "react-router-dom";
 import forEach from "lodash/forEach"
 import {FormComponentProps} from "antd/lib/form";
-import {WrappedDataSearch} from "./DataSearch";
+import DataSearchTrans from "./DataSearch";
 import {WrappedSearchFilter} from "./SearchFilter";
+import {withTranslation, WithTranslation} from "react-i18next";
 
 interface Props {
     onSelect?: (resources: Ecore.Resource[]) => void;
@@ -24,7 +25,7 @@ interface State {
     selectedRowKeys: any[];
 }
 
-class SearchGrid extends React.Component<Props & FormComponentProps, State> {
+class SearchGrid extends React.Component<Props & FormComponentProps & WithTranslation, State> {
     private refDataSearchRef: any = React.createRef();
 
     state = {
@@ -210,10 +211,9 @@ class SearchGrid extends React.Component<Props & FormComponentProps, State> {
             };
             const hasSelected = selectedRowKeys.length > 0;
             return (
-
              <div style={{padding: '20px'}}>
                  <div>
-                     <WrappedDataSearch onSearch={this.handleSearch}
+                     <DataSearchTrans onSearch={this.handleSearch}
                                         specialEClass={this.props.specialEClass}
                                         wrappedComponentRef={(inst: any) => this.refDataSearchRef = inst}
 
@@ -255,4 +255,6 @@ class SearchGrid extends React.Component<Props & FormComponentProps, State> {
             );
         }}
 
-    export const WrappedSearchGrid = Form.create<Props & FormComponentProps>()(SearchGrid);
+const WrappedSearchGrid = Form.create<Props & FormComponentProps & WithTranslation>()(SearchGrid);
+const SearchGridTrans = withTranslation()(WrappedSearchGrid);
+export default SearchGridTrans;
