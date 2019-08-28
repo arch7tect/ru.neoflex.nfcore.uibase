@@ -1,20 +1,18 @@
 import * as React from "react";
-import {Suspense} from "react";
 import {Button, Icon, Layout, Menu, notification} from 'antd';
 import 'antd/dist/antd.css';
 //import {Ecore} from "ecore";
 import {API, Error, IErrorHandler} from './modules/api'
-import {MetaBrowser} from "./components/MetaBrowser";
+import MetaBrowserTrans from "./components/MetaBrowser";
 import {ResourceEditor} from "./components/ResourceEditor"
 import {Link, Redirect, Route, RouteComponentProps, Switch} from "react-router-dom";
-import {QueryRunner} from "./components/QueryRunner";
+import QueryRunnerTrans from "./components/QueryRunner";
 import Login from "./components/Login";
 import {DataBrowser} from "./components/DataBrowser";
 import {MainApp} from "./MainApp";
-import {withTranslation} from "react-i18next";
+import {withTranslation, WithTranslation} from "react-i18next";
 import Ecore, {EObject} from "ecore";
 
-const MetaBrowserNew = withTranslation()(MetaBrowser);
 const { Header, Content, Sider } = Layout;
 
 export interface Props extends RouteComponentProps {
@@ -25,14 +23,13 @@ interface State {
     principal?: any;
     appName: string;
     languages: string[];
-    selectLanguage: string;
 }
 
-export class EcoreApp extends React.Component<any, State> {
+class EcoreApp extends React.Component<any, State> {
 
     constructor(props: any) {
         super(props);
-        this.state = {principal: undefined, appName: props.appName, languages: [], selectLanguage: ''};
+        this.state = {principal: undefined, appName: props.appName, languages: []};
     }
 
     onRightMenu(e : any) {
@@ -54,6 +51,7 @@ export class EcoreApp extends React.Component<any, State> {
         this.setState({principal}, API.instance().init)
     };
 
+    //use findByClass + forEach = 1 row = resources......
     getLanguages() {
         const prepared: Array<string> = [];
         API.instance().fetchAllClasses(false).then(classes => {
@@ -76,6 +74,7 @@ export class EcoreApp extends React.Component<any, State> {
     }
 
     componentDidMount(): void {
+        if (!this.state.languages.length) {this.getLanguages()}
         const _this = this;
         let errorHandler : IErrorHandler = {
             handleError(error: Error): void {
@@ -99,20 +98,15 @@ export class EcoreApp extends React.Component<any, State> {
     };
 
     render = () => {
-        if (!this.state.languages.length) {this.getLanguages()}
         return (
                 <Layout>
                     {this.state.principal === undefined ?
                         <Layout>
-                            <Suspense fallback={<div className="loader"/>}>
-                                <Login onLoginSucceed={this.setPrincipal}/>
-                            </Suspense>
+                            <Login onLoginSucceed={this.setPrincipal}/>
                         </Layout>
                         :
                         <Layout>
-                            <Suspense fallback={<div className="loader"/>}>
-                                {this.renderDev()}
-                            </Suspense>
+                            {this.renderDev()}
                         </Layout>
                     }
                 </Layout>
@@ -121,18 +115,24 @@ export class EcoreApp extends React.Component<any, State> {
 
     renderDev = () => {
         let principal = this.state.principal as any;
+        const {t, i18n} = this.props as Props & WithTranslation;
+        const setLang = (lng: any) => {
+            i18n.changeLanguage(lng);
+        };
         return (
             <Layout style={{height: '100vh'}}>
                 <Header style={{height: '40px', padding: "0px"}}>
                     <Menu theme="dark" mode="horizontal" onClick={(e) => this.onRightMenu(e)} style={{float: "right", height: '100%'}}>
                         <Menu.SubMenu title={<span><Icon type="user" style={{fontSize: '17px', marginRight: '0'}}/> {principal.name}</span>} style={{float: "right", height: '100%', top: '-3px'}}>
-                            <Menu.Item key={'logout'}><Icon type="logout" style={{fontSize: '17px'}}/>Logout</Menu.Item>
-                            <Menu.Item key={'developer'}><Icon type="setting" style={{fontSize: '17px'}} theme="filled"/>Developer</Menu.Item>
-                            <Menu.Item key={'app'}><Icon type="sketch" style={{fontSize: '17px'}}/>App</Menu.Item>
-                            <Menu.SubMenu  title={<span><Icon type="global" style={{fontSize: '17px'}}/>Language</span>}>
+                            <Menu.Item key={'logout'}><Icon type="logout" style={{fontSize: '17px'}}/>{t('logout')}</Menu.Item>
+                            <Menu.Item key={'developer'}><Icon type="setting" style={{fontSize: '17px'}} theme="filled"/>{t('developer')}</Menu.Item>
+                            <Menu.Item key={'app'}><Icon type="sketch" style={{fontSize: '17px'}}/>{t('app')}</Menu.Item>
+                            <Menu.SubMenu  title={<span><Icon type="global" style={{fontSize: '17px'}}/>{t('language')}</span>}>
                                 {
                                     this.state.languages.map((c: any) =>
-                                        <Menu.Item key={c} onClick={() => this.setState({selectLanguage: c})}>
+                                        <Menu.Item key={c} onClick={() =>
+                                            setLang(c)
+                                        }>
                                             <Icon type="flag" style={{fontSize: '17px'}}/>
                                             {c.toUpperCase()}
                                         </Menu.Item>)
@@ -152,24 +152,25 @@ export class EcoreApp extends React.Component<any, State> {
     };
 
     renderSettings=()=>{
+        const {t} = this.props as Props & WithTranslation;
         let selectedKeys = ['metadata', 'data', 'query']
             .filter(k => this.props.location.pathname.split('/').includes(k));
         return (
             <Layout>
                 <Sider collapsible breakpoint="lg" collapsedWidth="0">
                     <Menu theme="dark" mode="inline" selectedKeys={selectedKeys}>
-                        <Menu.Item key={'metadata'}><Link to={`/settings/metadata`}>Metadata</Link></Menu.Item>
-                        <Menu.Item key={'data'}><Link to={`/settings/data`}>Data</Link></Menu.Item>
-                        <Menu.Item key={'query'}><Link to={`/settings/query`}>Query</Link></Menu.Item>
+                        <Menu.Item key={'metadata'}><Link to={`/settings/metadata`}>{t('metadata')}</Link></Menu.Item>
+                        <Menu.Item key={'data'}><Link to={`/settings/data`}>{t('data')}</Link></Menu.Item>
+                        <Menu.Item key={'query'}><Link to={`/settings/query`}>{t('query')}</Link></Menu.Item>
                     </Menu>
                 </Sider>
                 <Layout>
                     <Content>
                         <Switch>
-                            <Route path='/settings/metadata' component={MetaBrowserNew}/>
+                            <Route path='/settings/metadata' component={MetaBrowserTrans}/>
                             <Route exact={true} path='/settings/data' component={DataBrowser}/>
                             <Route path='/settings/data/:id/:ref' component={ResourceEditor}/>
-                            <Route path='/settings/query' component={QueryRunner}/>
+                            <Route path='/settings/query' component={QueryRunnerTrans}/>
                         </Switch>
                     </Content>
                 </Layout>
@@ -183,3 +184,5 @@ export class EcoreApp extends React.Component<any, State> {
         )
     }
 }
+const EcoreAppTrans = withTranslation()(EcoreApp);
+export default EcoreAppTrans;

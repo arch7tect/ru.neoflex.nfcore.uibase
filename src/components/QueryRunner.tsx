@@ -7,6 +7,7 @@ import AceEditor from "react-ace";
 import 'brace/mode/json';
 import 'brace/theme/tomorrow';
 import Splitter from './CustomSplitter'
+import {withTranslation, WithTranslation} from "react-i18next";
 
 export interface Props {
 }
@@ -17,7 +18,7 @@ interface State {
     splitterPosition: number;
 }
 
-export class QueryRunner extends React.Component<any, State> {
+class QueryRunner extends React.Component<any, State> {
 
     private splitterRef: React.RefObject<any>
     
@@ -30,7 +31,7 @@ export class QueryRunner extends React.Component<any, State> {
         json: JSON.stringify({contents: {eClass: "ru.neoflex.nfcore.base.auth#//User"}}, null, 4),
         result: '',
         splitterPosition: 50
-    }
+    };
 
     run = () => {
         API.instance().find(JSON.parse(this.state.json)).then(results=>{
@@ -41,31 +42,32 @@ export class QueryRunner extends React.Component<any, State> {
             this.resizeEditors()
             this.setState({result: JSON.stringify({objects, executionStats, bookmark, warning}, null, 4)});
         })
-    }
+    };
 
     resizeEditors = () => {
         (this.refs.aceEditor as AceEditor).editor.resize()
         if (this.refs.console) {
             (this.refs.console as AceEditor).editor.resize()
         }
-    }
+    };
 
     onSplitterChange = (value: number): void => {
         this.resizeEditors();
         this.setState({splitterPosition: value});
-    }
+    };
 
     onJsonChange = (json: string) => {
         this.resizeEditors();
         this.setState({json})
-    }
+    };
 
     render() {
+        const {t} = this.props as Props & WithTranslation;
         return (
             <div style={{display: 'flex', flexFlow: 'column', height: '100%'}}>
                 <Form layout={"inline"}>
                     <Form.Item wrapperCol={{span: 2, push: 14}}>
-                        <Tooltip placement="top" title={"Run"}>
+                        <Tooltip placement="top" title={t('run')}>
                             <Button id="run" shape="circle" style={{border: 0}} onClick={this.run}>
                                 <IconFA name="eye"/>
                             </Button>
@@ -123,3 +125,6 @@ export class QueryRunner extends React.Component<any, State> {
         );
     }
 }
+
+const QueryRunnerTrans = withTranslation()(QueryRunner);
+export default QueryRunnerTrans;

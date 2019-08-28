@@ -39,7 +39,7 @@ export class Login extends React.Component<Props & WithTranslation, State> {
     };
 
     render() {
-        const { t, i18n } = this.props;
+        const {t, i18n} = this.props as Props & WithTranslation;
         const setLang = (lng: any) => {
             i18n.changeLanguage(lng);
         };

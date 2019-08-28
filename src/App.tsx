@@ -1,13 +1,15 @@
-import React from 'react';
+import React, {Suspense} from 'react';
 import './App.css';
-import {EcoreApp} from "./EcoreApp";
+import EcoreAppTrans from "./EcoreApp";
 
 const App: React.FC = (props) => {
-  return (
-    <div className="App">
-        <EcoreApp {...props} appName="ReportsApp" />
-    </div>
-  );
-}
+    return (
+        <div className="App">
+            <Suspense fallback={<div className="loader"/>}>
+                <EcoreAppTrans {...props} appName="ReportsApp" />
+            </Suspense>
+        </div>
+    );
+};
 
 export default App;
