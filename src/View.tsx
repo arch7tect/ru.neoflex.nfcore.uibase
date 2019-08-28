@@ -5,12 +5,10 @@ export class View extends React.Component<any, any> {
     protected viewObject: Ecore.EObject
     protected viewFactory: ViewFactory
 
-    setViewObject(eObject: Ecore.EObject) {
-        this.viewObject = eObject
-    }
-
-    setViewFactory(viewFactory: ViewFactory) {
-        this.viewFactory = viewFactory
+    constructor(props: any) {
+        super(props)
+        this.viewObject = props.viewObject
+        this.viewFactory = props.viewFactory
     }
 
     render = () => {
@@ -19,7 +17,7 @@ export class View extends React.Component<any, any> {
 }
 
 export interface ViewFactory {
-    createView(viewObject: Ecore.EObject, props: any): View;
+    createView(viewObject: Ecore.EObject, props: any): JSX.Element;
     name: string;
 }
 

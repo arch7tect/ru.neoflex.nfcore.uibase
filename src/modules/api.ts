@@ -328,6 +328,17 @@ export class API implements IErrorHandler {
         })
     }
 
+    call(ref: string, method: string, params: any[]): Promise<any> {
+        return this.fetchJson(`/emf/resource?ref=${encodeURIComponent(ref)}&method=${encodeURIComponent(method)}`, {
+            method: "POST",
+            headers: {
+                'Accept': 'application/json',
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(params)
+        })
+    }
+
     authenticate(login : any, password : any) {
         if (login === undefined) {
             return this.fetchFirstAuthenticate('/system/user', this.getOpts({}))

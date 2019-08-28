@@ -14,6 +14,8 @@ interface State {
     hideReferences: boolean
     currentTool?: string
     application?: Ecore.EObject
+    viewObject?: Ecore.EObject
+    path?: Ecore.EObject[]
 }
 
 export class MainApp extends React.Component<any, State> {
@@ -34,7 +36,12 @@ export class MainApp extends React.Component<any, State> {
                 API.instance().findByKindAndName(eClass, this.state.appName).then(resources => {
                     if (resources.length > 0) {
                         const application = resources[0].eContents()[0]
-                        this.setState({application})
+                        this.setState({application, viewObject: application})
+                        API.instance().call(application.eResource().eURI(), "generateReferenceTree", []).then(referenceTree=>{
+                            if (!!referenceTree) {
+                                console.log(referenceTree)
+                            }
+                        })
                     }
                 })
             }
@@ -68,8 +75,8 @@ export class MainApp extends React.Component<any, State> {
     }
 
     renderContent = () => {
-        if (!this.state.application) return null
-        return this.viewFactory.createView(this.state.application, this.props)
+        if (!this.state.viewObject) return null
+        return this.viewFactory.createView(this.state.viewObject, this.props)
     }
 
     renderReferences = () => {

@@ -6,7 +6,7 @@ import * as React from "react";
 class ViewContainer extends View {
     renderChildren = () => {
         const children = this.viewObject.get("children") as Ecore.EObject[]
-        return children.map(c=>this.viewFactory.createView(c, this.props).render())
+        return children.map(c=>this.viewFactory.createView(c, this.props))
     }
     render = () => {
         return <div>{this.renderChildren()}</div>
@@ -24,10 +24,7 @@ class AntdFactory implements ViewFactory {
         if (!Component) {
             Component = View
         }
-        const view = new Component(props)
-        view.setViewObject(viewObject)
-        view.setViewFactory(this)
-        return view
+        return <Component viewObject={viewObject} мvievFactory={this} {...props}/>
     }
 }
 
