@@ -14,6 +14,7 @@ import {withTranslation, WithTranslation} from "react-i18next";
 import {EObject} from "ecore";
 
 const { Header, Content, Sider } = Layout;
+const ResourceEditorTrans = withTranslation()(ResourceEditor);
 
 export interface Props extends RouteComponentProps {
     name: string;
@@ -61,7 +62,7 @@ class EcoreApp extends React.Component<any, State> {
                         resources.map((r) =>
                                 prepared.push(r.eContents()[0].get('name'))
                         );
-                        this.setState({languages: prepared})
+                        this.setState({languages: prepared.sort()})
                     })
             }
         });
@@ -163,7 +164,7 @@ class EcoreApp extends React.Component<any, State> {
                         <Switch>
                             <Route path='/settings/metadata' component={MetaBrowserTrans}/>
                             <Route exact={true} path='/settings/data' component={DataBrowser}/>
-                            <Route path='/settings/data/:id/:ref' component={ResourceEditor}/>
+                            <Route path='/settings/data/:id/:ref' component={ResourceEditorTrans}/>
                             <Route path='/settings/query' component={QueryRunnerTrans}/>
                         </Switch>
                     </Content>

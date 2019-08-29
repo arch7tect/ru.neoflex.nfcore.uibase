@@ -1,9 +1,11 @@
 import * as React from "react";
 import {Button, Form, Input, Table} from 'antd';
 import {FormComponentProps} from "antd/lib/form";
+import {withTranslation, WithTranslation} from "react-i18next";
 
 interface Props {
     onName: any;
+    onTitle: any;
     tableData: Array<any>;
     tableDataFilter: (tableDataFilter: Array<any>) => void;
 }
@@ -14,7 +16,7 @@ interface State {
     selectedKeys: any[];
 }
 
-class SearchFilter extends React.Component<Props & FormComponentProps, State> {
+class SearchFilter extends React.Component<Props & FormComponentProps & WithTranslation, State> {
     state = {
         selectedRowKeys: [],
         searchText: '',
@@ -81,6 +83,8 @@ class SearchFilter extends React.Component<Props & FormComponentProps, State> {
     };
 
     render() {
+        const {t} = this.props;
+        const columnsT = t(this.props.onTitle, {ns: 'packages'});
             const {selectedRowKeys} = this.state;
             const rowSelection = {
                 selectedRowKeys,
@@ -89,7 +93,7 @@ class SearchFilter extends React.Component<Props & FormComponentProps, State> {
             return (
                 <Form style={{ padding: 9 }} >
                     <Input
-                        placeholder={`Search ${this.props.onName}`}
+                        placeholder={`${t('search')} ${columnsT}`}
                         value={this.state.selectedKeys[0]}
                         onChange={e => this.setSelectedKeys(e.target.value ? [e.target.value] : [])}
                         onPressEnter={() => this.handleSearchFilterDropdown(this.state.selectedKeys)}
@@ -99,18 +103,19 @@ class SearchFilter extends React.Component<Props & FormComponentProps, State> {
                     />
                     <Table
                         size={"small"}
-                        style={{whiteSpace: "pre", maxWidth: "300px", maxHeight: "400px"}}
+                        style={{whiteSpace: "pre", maxWidth: "300px", maxHeight: "400px", marginTop: "15px" }}
                         scroll={{x: 200}}
-                        columns={[{title: this.props.onName, dataIndex: this.props.onName, key: this.props.onName}]}
+                        columns={[{title: columnsT, dataIndex: this.props.onName, key: this.props.onName}]}
                         dataSource={this.filterDataSource(this.props.onName, this.state.selectedKeys[0])}
                         rowSelection={rowSelection}
+                        pagination={false}
                     />
                     <Button
                         type="primary"
                         onClick={() => this.handleSearchFilterDropdown(this.state.selectedKeys)}
                         icon="search"
                         size="small"
-                        style={{ width: 90, marginRight: 8 }}
+                        style={{ width: 90, marginRight: 8, marginTop: 15 }}
                     />
                     <Button
                         onClick={() => {
@@ -127,4 +132,6 @@ class SearchFilter extends React.Component<Props & FormComponentProps, State> {
             );
         }}
 
-    export const WrappedSearchFilter = Form.create<Props & FormComponentProps>()(SearchFilter);
+const WrappedSearchFilter = Form.create<Props & FormComponentProps & WithTranslation>()(SearchFilter);
+const SearchFilterTrans = withTranslation()(WrappedSearchFilter);
+export default SearchFilterTrans;

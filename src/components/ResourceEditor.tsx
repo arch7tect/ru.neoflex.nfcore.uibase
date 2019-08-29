@@ -8,7 +8,8 @@ import update from 'immutability-helper';
 //import _filter from 'lodash/filter'
 //import _map from 'lodash/map'
 import EditableTextArea from './EditableTextArea'
-import ResourceSearchTrans from "./ResourceSearch";
+import SearchGridTrans from "./SearchGrid";
+import {WithTranslation} from "react-i18next";
 
 export interface Props {
 }
@@ -200,7 +201,7 @@ export class ResourceEditor extends React.Component<any, State> {
                     return null
                 }
             )
-        }
+        };
 
         return (
             <Tree
@@ -289,7 +290,7 @@ export class ResourceEditor extends React.Component<any, State> {
                     }}
                 />
             }
-        }
+        };
 
         const preparedData:Array<Object> = [];
         const featureList = resource.eContainer.getEObject(targetObject._id).eClass.get('eAllStructuralFeatures')
@@ -299,7 +300,7 @@ export class ResourceEditor extends React.Component<any, State> {
                 property: feature.get('name'), 
                 value: prepareValue(feature, targetObject[feature.get('name')], idx), 
                 key: feature.get('name') + idx })
-        })
+        });
 
         return preparedData
     }
@@ -352,11 +353,11 @@ export class ResourceEditor extends React.Component<any, State> {
         /*const eClass = this.state.treeRightClickEClass
         const eObject = Ecore.ResourceSet.create().getEObject(eClass)
         const allSubTypes = eObject.get('eAllSubTypes')*/
-    }
+    };
 
     handleDeleteChild = (e:any) => {
         e.preventDefault()
-    }
+    };
 
     handleSelect = (resources : Ecore.Resource[]): void => {
         this.setState({ modalVisible: false })
@@ -382,6 +383,7 @@ export class ResourceEditor extends React.Component<any, State> {
     }
 
     render() {
+        const {t} = this.props as Props & WithTranslation;
         return (
             <div style={{ display: 'flex', flexFlow: 'column', height: '100%' }}>
                 <div style={{ flexGrow: 1 }}>
@@ -415,12 +417,12 @@ export class ResourceEditor extends React.Component<any, State> {
                 </div>
                 <Modal
                     width={'1000px'}
-                    title="Add resource"
+                    title={t('addresource')}
                     visible={this.state.modalVisible}
                     onOk={this.handleModalOk}
                     onCancel={this.handleModalCancel}
                 >
-                    <ResourceSearchTrans onSelect={this.handleSelect}/>
+                    <SearchGridTrans onSelect={this.handleSelect} showAction={true} specialEClass={undefined}/>
                 </Modal>
                 {this.state.rightClickMenuVisible && this.renderRightMenu()}
             </div>

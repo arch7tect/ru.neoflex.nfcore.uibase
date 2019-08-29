@@ -6,7 +6,7 @@ import {Link} from "react-router-dom";
 import forEach from "lodash/forEach"
 import {FormComponentProps} from "antd/lib/form";
 import DataSearchTrans from "./DataSearch";
-import {WrappedSearchFilter} from "./SearchFilter";
+import SearchFilterTrans from "./SearchFilter";
 import {withTranslation, WithTranslation} from "react-i18next";
 
 interface Props {
@@ -58,28 +58,34 @@ class SearchGrid extends React.Component<Props & FormComponentProps & WithTransl
                 }
             }
         });
+
         let name: string = 'eClass';
+        let title: string = 'application.eClasses.EClassView.eStructuralFeatures.eClass.caption';
         let type: string = 'stringType';
-        let AllColumns:Array<any> = [{title: name, dataIndex: name, key: name, type: name,
+        let AllColumns:Array<any> = [{title: title, dataIndex: name, key: name, type: name,
             sorter: (a: any, b: any) => this.sortColumns(a, b, name, type),
-            ...this.getColumnSearchProps(name),
+            ...this.getColumnSearchProps(name, title),
             filterIcon: (filtered: any) => (
                 <Icon type="search" style={{ color: filtered ? "#1890ff" : undefined }} />
             ),
             onFilter: (value: any, record: any) => record.eClass.toLowerCase() === value.toLowerCase(),
         }];
+
         for (let column of AllFeatures){
             let name: string = "";
-            column.get('name') === "children" ? name = "_children" : name = column.get('name');
+            let title: string = "";
+            column.get('name') === "children" ? name = "_children" :
+                name = column.get('name');
+            title = column.eContainer.eContainer.get('name') + ".eClasses." + column.eContainer.get('name') + ".eStructuralFeatures." + column.get('name') + ".caption"
             const type: string = !!column.get('eType') && column.get('eType').eClass.get('name') === 'EDataType' ? this.getDataType(column.get('eType').get('name')) : "stringType";
-            AllColumns.push({title: name, dataIndex: name, key: name, type: type,
+            AllColumns.push({title: title, dataIndex: name, key: name, type: type,
                 sorter: (a: any, b: any) => this.sortColumns(a, b, name, type),
                 render: (text: any) => {
                 if (text !== undefined && !!column.get('eType') && column.get('eType').eClass.get('name') !== 'EDataType') {
                         const maxJsonLength = text.indexOf('#') + 1;
                         return text.slice(0, maxJsonLength) + "..." }
                 else {return text}},
-                ...this.getColumnSearchProps(name),
+                ...this.getColumnSearchProps(name, title),
                 filterIcon: (filtered: any) => (
                     <Icon type="search" style={{ color: filtered ? "#1890ff" : undefined }} />
                 ),
@@ -178,9 +184,9 @@ class SearchGrid extends React.Component<Props & FormComponentProps & WithTransl
     };
 
     //for FilterMenu
-    getColumnSearchProps = (name: any) => ({
+    getColumnSearchProps = (name: any, title: any) => ({
         filterDropdown: () =>
-                <WrappedSearchFilter onName={name} tableData={this.filteredData()}
+                <SearchFilterTrans onName={name} onTitle={title} tableData={this.filteredData()}
                                      tableDataFilter={this.changeTableData}/>
     });
 
@@ -188,19 +194,23 @@ class SearchGrid extends React.Component<Props & FormComponentProps & WithTransl
         this.setState({tableDataFilter})
     };
 
+
     render() {
-            const columns:Array<any> = this.state.columns;
+        const {t} = this.props;
+        const columnsT = this.state.columns.map( (c: any) =>(
+            {...c, title: t(c.title, {ns: 'packages'})}
+        )) ;
             const actionColumnDef = [{
-                title: 'Action',
+                title: t('action'),
                 dataIndex: 'action',
                 key: 'action',
                 fixed: 'right',
                 width: 100,
                 render: (text:string, record:any) => {
                     const editButton = <Link key={`edit${record.key}`} to={`/settings/data/${record.resource.get('uri')}/${record.resource.rev}`}>
-                        <span id="edit">Edit</span>
+                        <span id="edit">{t('edit')}</span>
                     </Link>;
-                    const deleteButton = <span id="delete" key={`delete${record.key}`} style={{ marginLeft: 8 }} onClick={(e:any)=>this.handleDeleteResource(e, record)}>Delete</span>;
+                    const deleteButton = <span id="delete" key={`delete${record.key}`} style={{ marginLeft: 8 }} onClick={(e:any)=>this.handleDeleteResource(e, record)}>{t('delete')}</span>;
                     return [editButton, deleteButton]
                 }
             }];
@@ -210,6 +220,7 @@ class SearchGrid extends React.Component<Props & FormComponentProps & WithTransl
                 onChange: this.onSelectChange
             };
             const hasSelected = selectedRowKeys.length > 0;
+
             return (
              <div style={{padding: '20px'}}>
                  <div>
@@ -220,21 +231,22 @@ class SearchGrid extends React.Component<Props & FormComponentProps & WithTransl
                      />
                  </div>
                  <div>
+
                      {this.state.resources.length === 0
                          ?
-                         !this.state.notFoundActivator ? '' : 'Not found'
+                         !this.state.notFoundActivator ? '' : t('notfound')
                          :
                          this.props.onSelect !== undefined
                              ?
                              <div>
                                  <div>
-                                     <Button type="primary" onClick={this.handleSelect} disabled={!hasSelected} style={{width: '100px', fontSize: '17px'}}>
+                                     <Button type="primary" onClick={this.handleSelect} disabled={!hasSelected} style={{width: '100px', fontSize: '17px', marginBottom: '15px'}}>
                                          <Icon type="select" />
                                     </Button>
                                  </div>
                                  <Table
                                      scroll={{x: 1300}}
-                                     columns={this.props.showAction ? columns.concat(actionColumnDef) : columns}
+                                     columns={this.props.showAction ? columnsT.concat(actionColumnDef) : columnsT}
                                      dataSource={this.filteredData()}
                                      bordered={true}
                                      rowSelection={rowSelection}
@@ -244,7 +256,7 @@ class SearchGrid extends React.Component<Props & FormComponentProps & WithTransl
                              :
                              <Table
                                  scroll={{x: 1300}}
-                                 columns={this.props.showAction ? columns.concat(actionColumnDef) : columns}
+                                 columns={this.props.showAction ? columnsT.concat(actionColumnDef) : columnsT}
                                  dataSource={this.filteredData()}
                                  bordered={true}
                                  style={{whiteSpace: "pre"}}
