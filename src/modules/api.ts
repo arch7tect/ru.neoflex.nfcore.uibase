@@ -206,7 +206,7 @@ export class API implements IErrorHandler {
         return result;
     }
 
-    private loadEObjectWithRefs(level: number, jsonObject: any, resourceSet: Ecore.ResourceSet, loading: any, uri: string): Promise<Ecore.Resource> {
+    loadEObjectWithRefs(level: number, jsonObject: any, resourceSet: Ecore.ResourceSet, loading: any, uri: string): Promise<Ecore.Resource> {
         let refEObjects: Promise<any>[] = []
         if (level > 0) {
             let refs = Array.from(API.collectReferences(jsonObject, new Set<string>()).values());
@@ -329,7 +329,7 @@ export class API implements IErrorHandler {
     }
 
     call(ref: string, method: string, params: any[]): Promise<any> {
-        return this.fetchJson(`/emf/resource?ref=${encodeURIComponent(ref)}&method=${encodeURIComponent(method)}`, {
+        return this.fetchJson(`/emf/call?ref=${encodeURIComponent(ref)}&method=${encodeURIComponent(method)}`, {
             method: "POST",
             headers: {
                 'Accept': 'application/json',
