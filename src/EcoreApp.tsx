@@ -11,7 +11,7 @@ import Login from "./components/Login";
 import {DataBrowser} from "./components/DataBrowser";
 import {MainApp} from "./MainApp";
 import {withTranslation, WithTranslation} from "react-i18next";
-import Ecore, {EObject} from "ecore";
+import {EObject} from "ecore";
 
 const { Header, Content, Sider } = Layout;
 
@@ -51,25 +51,19 @@ class EcoreApp extends React.Component<any, State> {
         this.setState({principal}, API.instance().init)
     };
 
-    //use findByClass + forEach = 1 row = resources......
     getLanguages() {
         const prepared: Array<string> = [];
         API.instance().fetchAllClasses(false).then(classes => {
             const temp = classes.find((c: EObject) => c._id === "//Lang");
-            API.instance().findByKindAndRegexp(temp as Ecore.EClass, "")
-                .then((resources) => {
-                    resources.forEach((res: Ecore.Resource) => {
-                        if (res.to().length === undefined) {
-                            const row = {...res.to(), resource: res};
-                            if (row.hasOwnProperty("children")) {
-                                row["_children"] = row["children"];
-                                delete row["children"]
-                            }
-                            prepared.push(row.name);
-                        }
-                    });
-                    this.setState({languages: prepared})
-                })
+            if (temp !== undefined) {
+                API.instance().findByClass(temp, {contents: {eClass: temp.eURI()}})
+                    .then((resources) => {
+                        resources.map((r) =>
+                                prepared.push(r.eContents()[0].get('name'))
+                        );
+                        this.setState({languages: prepared})
+                    })
+            }
         });
     }
 
@@ -126,7 +120,7 @@ class EcoreApp extends React.Component<any, State> {
                         <Menu.SubMenu title={<span><Icon type="user" style={{fontSize: '17px', marginRight: '0'}}/> {principal.name}</span>} style={{float: "right", height: '100%', top: '-3px'}}>
                             <Menu.Item key={'logout'}><Icon type="logout" style={{fontSize: '17px'}}/>{t('logout')}</Menu.Item>
                             <Menu.Item key={'developer'}><Icon type="setting" style={{fontSize: '17px'}} theme="filled"/>{t('developer')}</Menu.Item>
-                            <Menu.Item key={'app'}><Icon type="sketch" style={{fontSize: '17px'}}/>{t('app')}</Menu.Item>
+                            <Menu.Item key={'app'}><Icon type="sketch" style={{fontSize: '17px'}}/>App</Menu.Item>
                             <Menu.SubMenu  title={<span><Icon type="global" style={{fontSize: '17px'}}/>{t('language')}</span>}>
                                 {
                                     this.state.languages.map((c: any) =>
