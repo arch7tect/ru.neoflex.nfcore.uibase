@@ -5,7 +5,8 @@ import {Icon as IconFA} from 'react-fa';
 import './MainApp.css'
 import {API} from "./modules/api";
 import Ecore from "ecore"
-import {ViewRegistry, ViewFactory} from './ViewRegistry'
+import {ViewRegistry} from './ViewRegistry'
+import { Tree } from 'antd'
 
 const FooterHeight = '2em'
 
@@ -14,16 +15,30 @@ interface State {
     hideReferences: boolean
     currentTool?: string
     application?: Ecore.EObject
+    viewObject?: Ecore.EObject
+    referenceTree?: Ecore.EObject
+    path?: Ecore.EObject[]
 }
 
 export class MainApp extends React.Component<any, State> {
     private refSplitterRef: React.RefObject<any> = React.createRef()
     private toolsSplitterRef: React.RefObject<any> = React.createRef()
-    private viewFactory: ViewFactory = ViewRegistry.INSTANCE.get('antd')
+    private viewFactory = ViewRegistry.INSTANCE.get('antd')
 
     constructor(props: any) {
         super(props)
         this.state = {appName: props.appName, hideReferences: false, application: undefined}
+    }
+
+    setViewObject = (viewObject: Ecore.EObject)=>{
+        this.setState({viewObject})
+        API.instance().call(viewObject.eURI(), "generateReferenceTree", []).then(referenceTree=>{
+            if (!!referenceTree) {
+                API.instance().loadEObjectWithRefs(999, referenceTree, Ecore.ResourceSet.create(), {}, viewObject.eURI() + referenceTree._id).then(r=>{
+                    this.setState(({referenceTree: r.eContents()[0]}))
+                })
+            }
+        })
     }
 
     componentDidMount(): void {
@@ -34,7 +49,7 @@ export class MainApp extends React.Component<any, State> {
                 API.instance().findByKindAndName(eClass, this.state.appName).then(resources => {
                     if (resources.length > 0) {
                         const application = resources[0].eContents()[0]
-                        this.setState({application})
+                        this.setState({application}, ()=>{this.setViewObject(application)})
                     }
                 })
             }
@@ -68,12 +83,26 @@ export class MainApp extends React.Component<any, State> {
     }
 
     renderContent = () => {
-        if (!this.state.application) return null
-        return this.viewFactory.createView(this.state.application, this.props)
+        if (!this.state.viewObject) return null
+        return this.viewFactory.createView(this.state.viewObject, this.props)
     }
 
     renderReferences = () => {
-        return "References"
+        const referenceTree = this.state.referenceTree
+        return !referenceTree ? null : (
+            <Tree.DirectoryTree defaultExpandAll>
+                {referenceTree.get('children').map((c: Ecore.EObject)=>this.renderTreeNode(c))}
+            </Tree.DirectoryTree>
+
+        )
+    }
+
+    renderTreeNode = (eObject: Ecore.EObject, parentKey?: string) => {
+        const code = eObject.get('name')
+        const key = parentKey ? parentKey + '.' + code : code
+        const children = eObject.get('children').map((c: Ecore.EObject)=>this.renderTreeNode(c, key))
+        const isLeaf = !eObject.isKindOf('CatalogNode')
+        return <Tree.TreeNode title={code} key={key} isLeaf={isLeaf}>{children}</Tree.TreeNode>
     }
 
     render = () => {
@@ -94,10 +123,10 @@ export class MainApp extends React.Component<any, State> {
                         localStorage.setItem('mainapp_refsplitter_pos', size)
                     }}
                 >
-                    <div style={{flexGrow: 1}}>
+                    <div style={{flexGrow: 1, backgroundColor: "white", height: '100%', overflow: "auto"}}>
                         {this.renderReferences()}
                     </div>
-                    <div style={{height: '100%', width: '100%', overflow: 'auto'}}>
+                    <div style={{backgroundColor: "white", height: '100%', overflow: 'auto'}}>
                         <div style={{height: `calc(100% - ${FooterHeight})`, width: '100%', overflow: 'hidden'}}>
                             <Splitter
                                 ref={this.toolsSplitterRef}
@@ -114,10 +143,10 @@ export class MainApp extends React.Component<any, State> {
                                     localStorage.setItem('mainapp_toolssplitter_pos', size)
                                 }}
                             >
-                                <div style={{flexGrow: 1, overflow: 'auto'}}>
-                                    {this.renderContent()}
+                                <div style={{zIndex: 10, backgroundColor: "white"}}>
+                                    <div style={{height: '100%', width: '100%', backgroundColor: "white"}}>{this.renderContent()}</div>
                                 </div>
-                                <div style={{height: '100%', width: '100%', overflow: 'auto'}}>
+                                <div style={{height: '100%', width: '100%', overflow: 'auto', backgroundColor: "white"}}>
                                     {this.renderToolbox()}
                                 </div>
                             </Splitter>
