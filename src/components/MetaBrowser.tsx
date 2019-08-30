@@ -2,6 +2,7 @@ import * as React from "react";
 import {Col, Row, Table} from 'antd';
 import Ecore from "ecore"
 import {API} from "../modules/api";
+import {withTranslation, WithTranslation} from "react-i18next";
 
 export interface Props {
 }
@@ -10,7 +11,7 @@ interface State {
     ePackages: Ecore.EPackage[];
 }
 
-export class MetaBrowser extends React.Component<Props, State> {
+class MetaBrowser extends React.Component<Props & WithTranslation, State> {
     state = {ePackages: Ecore.EPackage.Registry.ePackages()};
 
     componentDidMount(): void {
@@ -24,7 +25,7 @@ export class MetaBrowser extends React.Component<Props, State> {
         let name: string = eObject.get('name');
         let postfix: string = '';
         if (eObject.isKindOf('EReference')) {
-            let isContainment = Boolean(eObject.get('containment')) === true;
+            let isContainment = Boolean(eObject.get('containment'));
             if (isContainment) {
                 prefix = prefix + 'contains ';
             } else {
@@ -44,7 +45,7 @@ export class MetaBrowser extends React.Component<Props, State> {
             }
         }
         if (eObject.isKindOf('EStructuralFeature')) {
-            let upperBound = eObject.get('upperBound')
+            let upperBound = eObject.get('upperBound');
             if (upperBound && upperBound !== 1) {
                 prefix = prefix + '[] ';
             } else {
@@ -66,7 +67,7 @@ export class MetaBrowser extends React.Component<Props, State> {
             } else {
                 prefix = prefix + 'class ';
             }
-            let eSuperTypes = (eObject.get('eSuperTypes') as any[]).filter(e => e.get('name') !== 'EObject')
+            let eSuperTypes = (eObject.get('eSuperTypes') as any[]).filter(e => e.get('name') !== 'EObject');
             if (eSuperTypes.length > 0) {
                 postfix = " extends " + eSuperTypes.map(e => e.get('name')).join(", ")
             }
@@ -76,21 +77,21 @@ export class MetaBrowser extends React.Component<Props, State> {
             if (eType) {
                 prefix = eType.get('name') + ' ';
             }
-            let eParameters = eObject.get('eParameters') as any[]
+            let eParameters = eObject.get('eParameters') as any[];
             postfix = '(' + eParameters.map(p => {
                 return p.get('eType').get('name') + ' ' + p.get('name')
             }).join(', ') + ')';
         }
         return <span>{prefix}<b>{name}</b>{postfix}</span>;
-    }
+    };
 
     render() {
-        let data: any[] = []
+        let data: any[] = [];
         for (let ePackage of this.state.ePackages) {
-            let eClassifiers: any[] = []
-            data.push({key: ePackage.eURI(), name: this.getName(ePackage), type: ePackage.eClass.get('name'), children: eClassifiers})
+            let eClassifiers: any[] = [];
+            data.push({key: ePackage.eURI(), name: this.getName(ePackage), type: ePackage.eClass.get('name'), children: eClassifiers});
             for (let eClassifier of ePackage.get('eClassifiers').array()) {
-                let children2: any[] = []
+                let children2: any[] = [];
                 let child = {
                     key: eClassifier.eURI(),
                     name: this.getName(eClassifier),
@@ -133,13 +134,16 @@ export class MetaBrowser extends React.Component<Props, State> {
                 }
             }
         }
+        const {t} = this.props as Props & WithTranslation;
         return (
             <Row>
                 <Col span={1}/>
                 <Col span={22}>
                     <Table dataSource={data} pagination={false}>
-                        <Table.Column title="Name" dataIndex="name" key="name"/>
-                        <Table.Column title="Type" dataIndex="type" key="type"/>
+                        <Table.Column title={t("datasource.eClasses.Driver.eStructuralFeatures.name.caption",
+                            {ns: 'packages'})} dataIndex="name" key="name"/>
+                        <Table.Column title={t("datasource.eClasses.ValueType.eStructuralFeatures.dataType.caption",
+                            {ns: 'packages'})} dataIndex="type" key="type"/>
                         <Table.Column title="URI" dataIndex="key" key="key"/>
                     </Table>
                 </Col>
@@ -148,3 +152,6 @@ export class MetaBrowser extends React.Component<Props, State> {
         );
     }
 }
+
+const MetaBrowserTrans = withTranslation()(MetaBrowser);
+export default MetaBrowserTrans;

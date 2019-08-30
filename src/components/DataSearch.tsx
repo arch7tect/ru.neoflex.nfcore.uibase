@@ -11,6 +11,7 @@ import Checkbox from "antd/lib/checkbox";
 import AceEditor from "react-ace";
 import 'brace/theme/tomorrow';
 import ponyCat from '../ponyCat.png';
+import {withTranslation, WithTranslation} from "react-i18next";
 
 interface Props {
     onSearch: (resources: Ecore.Resource[]) => void;
@@ -22,7 +23,7 @@ interface State {
     indicatorError: boolean;
 }
 
-class DataSearch extends React.Component<Props & FormComponentProps, State> {
+class DataSearch extends React.Component<Props & FormComponentProps & WithTranslation, State> {
 
     state = {
         classes: [],
@@ -87,6 +88,7 @@ class DataSearch extends React.Component<Props & FormComponentProps, State> {
         const {Option} = Select;
         const {getFieldDecorator, getFieldValue, setFields} = this.props.form;
         const {TabPane} = Tabs;
+        const {t} = this.props;
         return (
             <Form onSubmit={this.handleSubmit}>
                 {getFieldDecorator('key', {initialValue: 'data_search'})(
@@ -105,7 +107,7 @@ class DataSearch extends React.Component<Props & FormComponentProps, State> {
                                     }],
                                 })(
                                     <Select
-                                        notFoundContent="Not found"
+                                        notFoundContent={t('notfound')}
                                         allowClear={true}
                                         showSearch={true}
                                         disabled={!!this.props.specialEClass}
@@ -128,18 +130,19 @@ class DataSearch extends React.Component<Props & FormComponentProps, State> {
                                         message: 'Please enter name'
                                     }]
                                 })(
-                                    <Input placeholder="name" style={{width: '270px'}} type="text"/>
+                                    <Input placeholder={t("datasource.eClasses.Driver.eStructuralFeatures.name.caption",
+                                        {ns: 'packages'})} style={{width: '270px'}} type="text"/>
                                 )}
                             </FormItem>
                             <FormItem style={{display: 'inline-block'}}>
                                 {getFieldDecorator('regular_expression', {
                                     valuePropName: 'checked'
                                 })(
-                                    <Checkbox style={{marginLeft: '10px'}}>Regular expression</Checkbox>
+                                    <Checkbox style={{marginLeft: '10px'}}>{t("regularexpression")}</Checkbox>
                                 )}
                             </FormItem>
                             {this.state.indicatorError ?
-                                <img alt="Not found" src={ponyCat} className="error" />
+                                <img alt={t('notfound')} src={ponyCat} className="error" />
                                 :
                                 undefined
                             }
@@ -185,5 +188,7 @@ class DataSearch extends React.Component<Props & FormComponentProps, State> {
     }
 }
 
-export const WrappedDataSearch = Form.create<Props & FormComponentProps>()(DataSearch);
+const WrappedDataSearch = Form.create<Props & FormComponentProps & WithTranslation>()(DataSearch);
+const DataSearchTrans = withTranslation()(WrappedDataSearch);
+export default DataSearchTrans;
 

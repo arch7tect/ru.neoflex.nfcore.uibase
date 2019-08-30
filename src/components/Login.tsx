@@ -1,8 +1,10 @@
 import * as React from "react";
-import { Layout, Row, Col,Button } from 'antd'
+import {Button, Col, Layout, Row} from 'antd'
 import {API} from "../modules/api";
 import logo from '../logo.png';
 import pony from '../pony.png';
+import {WithTranslation, withTranslation} from "react-i18next";
+
 const { Header, Content } = Layout;
 
 export interface Props {
@@ -18,8 +20,9 @@ interface State {
     images: any;
 }
 
-export class Login extends React.Component<Props, State> {
+export class Login extends React.Component<Props & WithTranslation, State> {
     state = {principal: undefined, userName: undefined, password: undefined, waitMinute: true, count: 0, images: logo};
+
 
     componentDidMount(): void {
         this.authenticate().catch(()=>{
@@ -36,6 +39,10 @@ export class Login extends React.Component<Props, State> {
     };
 
     render() {
+        const {t, i18n} = this.props as Props & WithTranslation;
+        const setLang = (lng: any) => {
+            i18n.changeLanguage(lng);
+        };
         if (this.state.waitMinute) {
             return (
                 <div className="loader"/>
@@ -51,8 +58,9 @@ export class Login extends React.Component<Props, State> {
                                     <img alt="Not found" src={this.state.images} className="logo" onClick={this.surprise}/>
                                 </Col>
                                 <Col>
-                                    <Button type="dashed">
-                                        EN
+                                    <Button onClick={() => {
+                                        i18n.language === ('ru') ? setLang('en') : setLang('ru')}}>
+                                        {i18n.language}
                                     </Button>
                                 </Col>
                             </Row>
@@ -63,7 +71,7 @@ export class Login extends React.Component<Props, State> {
                                     autoFocus
                                     className="input-border"
                                     key="user"
-                                    placeholder="User Name"
+                                    placeholder={t('username')}
                                     onChange={e => {
                                         this.setState({userName: e.target.value})
                                     }}
@@ -73,14 +81,15 @@ export class Login extends React.Component<Props, State> {
                                     className="input-border"
                                     key="pass"
                                     type="password"
-                                    placeholder="password"
+                                    placeholder={t('password')}
                                     onChange={e => {
                                         this.setState({password: e.target.value})
                                     }}
                                     onKeyUp={this.authenticateIfEnterPress}
                                 />
                                 <button key="conbutton" className="custom-button"
-                                        onClick={this.authenticate}>Login
+                                        onClick={this.authenticate}>
+                                    {t('login')}
                                 </button>
                             </div>
                         </Content>
@@ -103,3 +112,5 @@ export class Login extends React.Component<Props, State> {
         }
     };
 }
+
+export default withTranslation()(Login)
