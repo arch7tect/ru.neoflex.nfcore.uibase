@@ -1,5 +1,5 @@
 import * as React from "react";
-import { Tree, Icon, Table, Modal, Button, Select, Row, Col } from 'antd';
+import { Tree, Icon, Table, Modal, Button, Select, Row, Col, Menu } from 'antd';
 import Ecore from "ecore";
 import { API } from "../modules/api";
 import Splitter from './CustomSplitter'
@@ -25,7 +25,7 @@ interface State {
     rightClickMenuVisible: Boolean,
     rightMenuPosition: Object,
     uniqKey: String,
-    treeRightClickEClass: String
+    treeRightClickNode: { [key: string]: any }
 }
 
 export class ResourceEditor extends React.Component<any, State> {
@@ -49,7 +49,7 @@ export class ResourceEditor extends React.Component<any, State> {
         rightClickMenuVisible: false,
         rightMenuPosition: {x:100,y:100},
         uniqKey: "",
-        treeRightClickEClass: "",
+        treeRightClickNode: {}
     };
 
     getPackages(): void {
@@ -182,17 +182,37 @@ export class ResourceEditor extends React.Component<any, State> {
 
     createTree() {
 
-        const generateNodes = (eClass: Ecore.EObject, json: { [key: string]: any }): Array<any> => {
+        const generateNodes = (eClass: Ecore.EObject, json: { [key: string]: any }, parentId?: String): Array<any> => {
                 return eClass.get('eAllStructuralFeatures') && eClass.get('eAllStructuralFeatures').map((feature: Ecore.EObject, idx: Number) => {
                     const isContainment = Boolean(feature.get('containment'));
                     const upperBound = feature.get('upperBound')
                     if ((upperBound === -1 || upperBound === 1) && isContainment) {
-                        const targetObject = Array.isArray(json[feature.get('name')]) ? json[feature.get('name')] : [json[feature.get('name')]]
-                        return <Tree.TreeNode array={true} key={feature.get('name') + idx} eClass={feature.get('eType').eURI()} targetObject={targetObject} icon={<Icon type="block" />} title={feature.get('name')}>
-                            {targetObject.map((object:{ [key: string]: any })=>{
-                                const eClass = Ecore.ResourceSet.create().getEObject(object.eClass)
-                                return <Tree.TreeNode key={feature.get('eType').get('name') + "." + idx} eClass={object.eClass ? object.eClass : feature.get('eType').eURI()} targetObject={object} icon={<Icon type="block" />} title={feature.get('eType').get('name')}>
-                                    {generateNodes(eClass, object)}
+                        const targetObject: { [key: string]: any } = Array.isArray(json[feature.get('name')]) ? 
+                            json[feature.get('name')] 
+                            : 
+                            json[feature.get('name')] ? [json[feature.get('name')]] : []
+                        return <Tree.TreeNode
+                            upperBound={upperBound}
+                            array={true}
+                            arrayLength={targetObject.length}
+                            lastIdInArray={targetObject.length > 0 && targetObject[targetObject.length-1] ? targetObject[targetObject.length-1]._id : undefined }
+                            key={`${parentId ? parentId : null}.${feature.get('name')}${idx}`}
+                            eClass={feature.get('eType').eURI()}
+                            targetObject={targetObject}
+                            icon={<Icon type="dash" />}
+                            title={feature.get('name')}
+                        >
+                            {targetObject.map((object: { [key: string]: any }) => {
+                                const res = Ecore.ResourceSet.create()
+                                const eClass = res.getEObject(object.eClass)
+                                return <Tree.TreeNode
+                                    key={object._id}
+                                    eClass={object.eClass ? object.eClass : feature.get('eType').eURI()}
+                                    targetObject={object}
+                                    icon={<Icon type="block" />}
+                                    title={eClass.get('name')}
+                                >
+                                    {generateNodes(eClass, object, object._id ? object._id : null )}
                                 </Tree.TreeNode>
                             })}
                         </Tree.TreeNode>
@@ -201,14 +221,14 @@ export class ResourceEditor extends React.Component<any, State> {
                 }
             )
         }
-
+       
         return (
             <Tree
                 showIcon
                 defaultExpandAll
                 switcherIcon={<Icon type="down" />}
                 onSelect={this.onTreeSelect}
-                onRightClick={this.onRightClick}
+                onRightClick={this.onTreeRightClick}
             >
                 <Tree.TreeNode style={{ fontWeight: '600' }} eClass={this.state.resource.eClass.eURI()} targetObject={this.state.resourceJSON} icon={<Icon type="cluster" />} title={this.state.resource.eClass.get('name')} key={this.state.resource._id}>
                     {generateNodes(this.state.resource.eClass, this.state.resourceJSON)}
@@ -236,13 +256,12 @@ export class ResourceEditor extends React.Component<any, State> {
         }
     };
 
-    onRightClick = (e:any) => {
-        //const eClass = e.node.props.eClass
-        //const eObject = Ecore.ResourceSet.create().getEObject(eClass)
-        //const siblings = Ecore.Edit.siblingTypes(eObject, null); 
-        //eObject.get('eAllSubTypes')
-
-        this.setState({ rightClickMenuVisible: true, rightMenuPosition: { x: e.event.clientX, y: e.event.clientY }, treeRightClickEClass: e.node.props.eClass })
+    onTreeRightClick = (e:any) => {
+        this.setState({ 
+            rightClickMenuVisible: true, 
+            rightMenuPosition: { x: e.event.clientX, y: e.event.clientY }, 
+            treeRightClickNode: e.node.props 
+        })
     };
 
     prepareTableData(targetObject: {[key: string]: any;}, resource: Ecore.EObject, key: String): Array<any> {
@@ -253,7 +272,13 @@ export class ResourceEditor extends React.Component<any, State> {
 
         const prepareValue = (eObject: Ecore.EObject, value: any, idx:Number): any => {
             if (eObject.isKindOf('EReference')) {
-                const elements = value ? value.map((el: Object, idx: number) => <React.Fragment key={idx}>{JSON.stringify(el)}<br /></React.Fragment>) : []
+                const elements = value ? 
+                    eObject.get('upperBound') === -1 ?  
+                        value.map((el: Object, idx: number) => <React.Fragment key={idx}>{JSON.stringify(el)}<br /></React.Fragment>) 
+                    :
+                        <React.Fragment key={value.$ref}>{JSON.stringify(value)}<br /></React.Fragment>
+                : 
+                    []
                 const component = <React.Fragment key={key+"_"+idx}>
                     {elements}
                     <Button key={key+"_"+idx} onClick={()=>this.setState({ modalVisible: true })}>...</Button>
@@ -317,7 +342,8 @@ export class ResourceEditor extends React.Component<any, State> {
     };
 
     renderRightMenu():any {
-        const eClass = this.state.treeRightClickEClass
+        const node: { [key: string]: any } = this.state.treeRightClickNode
+        const eClass = node.eClass
         const eObject = Ecore.ResourceSet.create().getEObject(eClass)
         const allSubTypes = eObject.get('eAllSubTypes')
         return <div className="right-menu" style={{
@@ -332,35 +358,41 @@ export class ResourceEditor extends React.Component<any, State> {
             left: this.state.rightMenuPosition.x,
             top: this.state.rightMenuPosition.y,
             backgroundColor: "#fff",
-            padding: "7px",
-            lineHeight: 2
+            padding: "1px",
+            lineHeight: 2,
+            zIndex: 100
         }}>
-            {allSubTypes.map((type:Ecore.EObject, idx:Number) => 
-                type.get('abstract') ? 
-                    undefined 
-                : 
-                    <button key={"menu_"+idx} className="menu-button" onClick={this.handleAddChild}>
-                        {type.get('name')}
-                    </button>)}
-            <button className="menu-delete-button" style={{borderTop: allSubTypes.length > 0 ? "1px solid #f2f2f2" : ""}}>Delete</button>
-            
+            <Menu onClick={this.handleRightMenuSelect} style={{ width: 150 ,border: "none" }} mode="vertical">
+                {allSubTypes.length > 0 && (node.upperBound === 1 && node.arrayLength > 0 ? false : true) && <Menu.SubMenu
+                    key="sub1"
+                    title="Add child"
+                >
+                    {allSubTypes.map((type: Ecore.EObject, idx: Number) =>
+                        type.get('abstract') ?
+                            undefined
+                            :
+                            <Menu.Item key={"menu_" + idx}>
+                                {type.get('name')}
+                            </Menu.Item>)}
+                </Menu.SubMenu>}
+                <Menu.Item key="1">Delete</Menu.Item>
+            </Menu>
         </div>
     }
 
-    handleAddChild = (e:any) => {
-        e.preventDefault()
-        /*const eClass = this.state.treeRightClickEClass
+    handleRightMenuSelect = (e:any) => {
+        const subTypeName = e.item.props.children
+        const node: { [key: string]: any } = this.state.treeRightClickNode  
+        const eClass = node.eClass
         const eObject = Ecore.ResourceSet.create().getEObject(eClass)
-        const allSubTypes = eObject.get('eAllSubTypes')*/
-    }
-
-    handleDeleteChild = (e:any) => {
-        e.preventDefault()
+        const foundEClass = eObject.get('eAllSubTypes').find((subType:Ecore.EObject) => subType.get('name') === subTypeName)
+        console.log(e)
+        
     }
 
     handleSelect = (resources : Ecore.Resource[]): void => {
         this.setState({ modalVisible: false })
-    };
+    }
 
     componentWillUnmount() {
         window.removeEventListener("click", this.hideRightClickMenu)
