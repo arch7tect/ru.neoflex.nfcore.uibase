@@ -17,7 +17,7 @@ interface State {
     application?: Ecore.EObject
     viewObject?: Ecore.EObject
     referenceTree?: Ecore.EObject
-    path?: Ecore.EObject[]
+    path: Ecore.EObject[]
 }
 
 export class MainApp extends React.Component<any, State> {
@@ -27,7 +27,7 @@ export class MainApp extends React.Component<any, State> {
 
     constructor(props: any) {
         super(props)
-        this.state = {appName: props.appName, hideReferences: false, application: undefined}
+        this.state = {appName: props.appName, hideReferences: false, path: []}
     }
 
     setViewObject = (viewObject: Ecore.EObject)=>{
@@ -89,19 +89,39 @@ export class MainApp extends React.Component<any, State> {
 
     renderReferences = () => {
         const referenceTree = this.state.referenceTree
+        const cbs = new Map<string, ()=>void>()
+        const onSelect = (keys: string[], event: any) => {
+            const cb = cbs.get(keys[keys.length - 1])
+            if (cb) cb()
+        }
         return !referenceTree ? null : (
-            <Tree.DirectoryTree defaultExpandAll>
-                {referenceTree.get('children').map((c: Ecore.EObject)=>this.renderTreeNode(c))}
+            <Tree.DirectoryTree defaultExpandAll onSelect={onSelect}>
+                {referenceTree.get('children').map((c: Ecore.EObject)=>this.renderTreeNode(c, cbs))}
             </Tree.DirectoryTree>
 
         )
     }
 
-    renderTreeNode = (eObject: Ecore.EObject, parentKey?: string) => {
+    push = (eObjectNode: Ecore.EObject, args?: any) =>{
+        const eRefObject = eObjectNode.get('eObject')
+        const eObjectView = eObjectNode.get('eObjectView')
+        console.log(eRefObject, eObjectView)
+        this.state.path.push(eObjectNode)
+        let href = "app?path=/" + this.state.path.map(e=>e.eResource().eURI()).join('/')
+        if (args) {
+            href = href + '&' + Object.keys(args).map(key => `${key}=${args[key]}`).join('&')
+        }
+        this.props.history.push(href)
+    }
+
+    renderTreeNode = (eObject: Ecore.EObject, cbs: Map<string, ()=>void>, parentKey?: string) => {
         const code = eObject.get('name')
         const key = parentKey ? parentKey + '.' + code : code
-        const children = eObject.get('children').map((c: Ecore.EObject)=>this.renderTreeNode(c, key))
+        const children = eObject.get('children').map((c: Ecore.EObject)=>this.renderTreeNode(c, cbs, key))
         const isLeaf = !eObject.isKindOf('CatalogNode')
+        if (eObject.isKindOf('EObjectNode')) {
+            cbs.set(key, ()=>{this.push(eObject)})
+        }
         return <Tree.TreeNode title={code} key={key} isLeaf={isLeaf}>{children}</Tree.TreeNode>
     }
 
