@@ -12,6 +12,7 @@ import {DataBrowser} from "./components/DataBrowser";
 import {MainApp} from "./MainApp";
 import {withTranslation, WithTranslation} from "react-i18next";
 import {EObject} from "ecore";
+import DynamicComponent from "./components/DynamicComponent"
 
 const { Header, Content, Sider } = Layout;
 const ResourceEditorTrans = withTranslation()(ResourceEditor);
@@ -30,7 +31,11 @@ class EcoreApp extends React.Component<any, State> {
 
     constructor(props: any) {
         super(props);
-        this.state = {principal: undefined, appName: props.appName, languages: []};
+        this.state = {
+            principal: undefined,
+            appName: props.appName,
+            languages: []
+        };
     }
 
     onRightMenu(e : any) {
@@ -45,6 +50,9 @@ class EcoreApp extends React.Component<any, State> {
         }
         else if (e.key === "app") {
             this.props.history.push('/app');
+        }
+        else if (e.key === "testComponent") {
+            this.props.history.push('/test');
         }
     }
 
@@ -122,6 +130,7 @@ class EcoreApp extends React.Component<any, State> {
                             <Menu.Item key={'logout'}><Icon type="logout" style={{fontSize: '17px'}}/>{t('logout')}</Menu.Item>
                             <Menu.Item key={'developer'}><Icon type="setting" style={{fontSize: '17px'}} theme="filled"/>{t('developer')}</Menu.Item>
                             <Menu.Item key={'app'}><Icon type="sketch" style={{fontSize: '17px'}}/>App</Menu.Item>
+                            <Menu.Item key={'testComponent'}><Icon type="coffee" style={{fontSize: '17px'}}/>Test component</Menu.Item>
                             <Menu.SubMenu  title={<span><Icon type="global" style={{fontSize: '17px'}}/>{t('language')}</span>}>
                                 {
                                     this.state.languages.map((c: any) =>
@@ -141,10 +150,19 @@ class EcoreApp extends React.Component<any, State> {
                     <Redirect from={'/'} exact={true} to={'/app'}/>
                     <Route path='/app' component={this.renderStartPage}/>
                     <Route path='/settings' component={this.renderSettings}/>
+<Route path='/test' component={this.renderTest}/>
                 </Switch>
             </Layout>
         )
     };
+
+    renderTest = ()=> {
+        return (
+            <div>
+            <DynamicComponent componentPath={"components/reports/component.js"} componentName={"unCorrect"}/>
+            <DynamicComponent componentPath={"components/reports/component.js"} componentName={"Report"}/>
+            </div>
+        )};
 
     renderSettings=()=>{
         const {t} = this.props as Props & WithTranslation;
