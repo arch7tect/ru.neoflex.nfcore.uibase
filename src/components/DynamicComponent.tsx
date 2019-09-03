@@ -33,11 +33,21 @@ class DynamicComponent extends React.Component<Props & WithTranslation, any> {
         const {t} = this.props;
         loadRemoteComponent(this.props.componentPath)
             .then((R) => {
-                this.setState(
-                    {Component: R[this.props.componentName]})}
-                )
-            .catch(() => {this.setState({Component: ()=><div>"{this.props.componentName}" {t("dynamiccomponent")} "{this.props.componentPath}"</div>})
+                if (R[this.props.componentName]) {
+                    this.setState(
+                        {Component: R[this.props.componentName]})
+                } else {
+                    this.notDownload(t)
+                }
             })
+            .catch(() => {this.notDownload(t)})
+    }
+
+    private notDownload(t: any) {
+        this.setState({
+            Component: () =>
+                <div>"{this.props.componentName}" {t("dynamiccomponent")} "{this.props.componentPath}"</div>
+        })
     }
 
     render() {
