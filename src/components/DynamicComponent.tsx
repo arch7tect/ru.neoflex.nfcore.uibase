@@ -1,6 +1,7 @@
 import * as React from "react";
 import {FC} from "react";
 import {withTranslation, WithTranslation} from "react-i18next";
+import {API} from "../modules/api";
 
 const urlCache = new Map<string, any>();
 
@@ -9,10 +10,9 @@ const loadRemoteComponent = (path: string) => {
         const exports = urlCache.get(path);
         return Promise.resolve(exports)
     }
-    let url = "http://localhost:8080/" + path;
     var exports: any = {};
     var module = {exports};
-    return fetch(url)
+    return API.instance().fetch(path)
         .then(res => res.text())
         .then((body) => {
             eval(body); // eslint-disable-line no-eval
