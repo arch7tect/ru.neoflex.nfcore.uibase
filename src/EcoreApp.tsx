@@ -93,7 +93,13 @@ class EcoreApp extends React.Component<any, State> {
                         btn,
                         duration: 0,
                         description: error.message,
-                        key
+                        key,
+                        style: {
+                            width: 400,
+                            marginLeft: -10,
+                            marginTop: 16,
+                            wordWrap: "break-word"
+                        },
                     })
             }
         } as IErrorHandler;
@@ -150,7 +156,7 @@ class EcoreApp extends React.Component<any, State> {
                     <Redirect from={'/'} exact={true} to={'/app'}/>
                     <Route path='/app' component={this.renderStartPage}/>
                     <Route path='/settings' component={this.renderSettings}/>
-<Route path='/test' component={this.renderTest}/>
+                    <Route path='/test' component={this.renderTest}/>
                 </Switch>
             </Layout>
         )
@@ -159,8 +165,7 @@ class EcoreApp extends React.Component<any, State> {
     renderTest = ()=> {
         return (
             <div>
-            <DynamicComponent componentPath={"components/reports/component.js"} componentName={"unCorrect"}/>
-            <DynamicComponent componentPath={"components/reports/component.js"} componentName={"Report"}/>
+                <DynamicComponent componentPath={"components/reports/component.js"} componentName={"Report"}/>
             </div>
         )};
 
