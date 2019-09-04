@@ -21,7 +21,13 @@ interface State {
 }
 
 export class Login extends React.Component<Props & WithTranslation, State> {
-    state = {principal: undefined, userName: undefined, password: undefined, waitMinute: true, count: 0, images: logo};
+    state = {principal: undefined,
+        userName: undefined,
+        password: undefined,
+        waitMinute: true,
+        count: 0,
+        images: logo
+    };
 
 
     componentDidMount(): void {

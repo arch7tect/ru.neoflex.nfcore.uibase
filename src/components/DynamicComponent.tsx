@@ -17,7 +17,7 @@ const loadRemoteComponent = (path: string) => {
         .then((body) => {
             eval(body); // eslint-disable-line no-eval
             urlCache.set(path, module.exports);
-            return module.exports ? module.exports : exports;
+            return module.exports
         })
 };
 
@@ -34,8 +34,9 @@ class DynamicComponent extends React.Component<Props & WithTranslation, any> {
         loadRemoteComponent(this.props.componentPath)
             .then((R) => {
                 if (R[this.props.componentName]) {
-                    this.setState(
-                        {Component: R[this.props.componentName]})
+                    this.setState({
+                        Component: withTranslation()(R[this.props.componentName])
+                    });
                 } else {
                     this.notDownload(t)
                 }

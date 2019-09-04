@@ -163,9 +163,13 @@ class EcoreApp extends React.Component<any, State> {
     };
 
     renderTest = ()=> {
+        const {t} = this.props as Props & WithTranslation;
         return (
             <div>
+                {/*Correct test example*/}
                 <DynamicComponent componentPath={"components/reports/component.js"} componentName={"Report"}/>
+                {/*Example with error*/}
+                <DynamicComponent componentPath={"components/reports/component.js"} componentName={"UnCorrect"}/>
             </div>
         )};
 
